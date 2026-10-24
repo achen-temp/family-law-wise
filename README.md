@@ -20,6 +20,20 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Production build
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+The production build and server were verified locally with Node.js 24.3.0 and Next.js 16.4.0. To use another local port, run `npm run start -- --hostname 127.0.0.1 --port 3005`.
+
+`next.config.ts` uses Turbopack's `workerThreads` plugin runtime so CSS loaders do not require the child-process socket pool that caused `binding to a port: Operation not permitted (os error 1)` on this host. The existing Tailwind loader and ordinary `next build` command are preserved.
+
+This option is experimental. The installed Next.js 16.4.0 guide documents a fallback to child processes on Node.js 24.13.1 and newer because of a worker teardown issue; that fallback can expose the original restriction again. When changing Node or Next versions, check `node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/turbopackPluginRuntimeStrategy.md` and rerun the production build. Do not use `forceWorkerThreads` to bypass the compatibility protection.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
