@@ -75,7 +75,7 @@ export function personName(party?: { firstName: string; lastName: string }) {
 }
 
 export function matterTitle(matter: Matter) {
-  return `${personName(clientParty(matter))} v. ${personName(otherParty(matter))}`;
+  return matter.name.trim() || `${personName(clientParty(matter))} v. ${personName(otherParty(matter))}`;
 }
 
 export function initials(name: string) {

@@ -22,7 +22,8 @@ export function PortalHome({ token }: { token: string }) {
   if (!matter || !intake) return null;
 
   const client = clientParty(matter);
-  const done = intake.completed.length;
+  const done = INTAKE_STEPS.filter((step) => intake.completed.includes(step.id)).length;
+  const draftCount = state.intakeDirtySections?.[token]?.length ?? 0;
   const next = INTAKE_STEPS.find((step) => !intake.completed.includes(step.id)) ?? INTAKE_STEPS[0];
   const requirements = state.requirements.filter((item) => item.matterId === token);
   const progress = stats(requirements);
@@ -35,6 +36,10 @@ export function PortalHome({ token }: { token: string }) {
         <h1 className="text-2xl font-semibold tracking-tight">To-do</h1>
         <p className="mt-1 text-sm text-muted">
           {state.firm.attorneyName} requested financial information for your {matter.matterType.toLowerCase()} matter.
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          This is a demo preview. Answers and drafts remain only while it stays open; refreshing or closing resets changes.
+          {draftCount > 0 ? ` ${draftCount} questionnaire section${draftCount === 1 ? " has" : "s have"} draft edits. Confirm each section to update the checklist.` : ""}
         </p>
         <ul className="mt-5 space-y-3">
           <TodoCard

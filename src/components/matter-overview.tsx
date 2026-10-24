@@ -46,7 +46,6 @@ export function MatterOverview({ matterId }: { matterId: string }) {
   const store = useStore();
   const matter = store.state.matters.find((item) => item.id === matterId);
   const [requestOpen, setRequestOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   if (!matter) return <Missing />;
 
   const requirements = store.state.requirements.filter((item) => item.matterId === matterId);
@@ -57,7 +56,6 @@ export function MatterOverview({ matterId }: { matterId: string }) {
   );
   const discovery = store.state.discoveries.find((item) => item.matterId === matterId && item.state === "open");
   const activity = store.state.activity.filter((item) => item.matterId === matterId).slice(0, 4);
-  const link = `/portal/${matter.id}`;
 
   return (
     <div>
@@ -75,7 +73,7 @@ export function MatterOverview({ matterId }: { matterId: string }) {
         }
       />
 
-      <StatusBanner matterId={matterId} link={link} copied={copied} onCopy={() => copyLink(link, setCopied)} />
+      <StatusBanner key={matterId} matterId={matterId} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="card p-5">
@@ -189,43 +187,66 @@ export function MatterOverview({ matterId }: { matterId: string }) {
   );
 }
 
-function StatusBanner({
-  matterId,
-  link,
-  copied,
-  onCopy,
-}: {
-  matterId: string;
-  link: string;
-  copied: boolean;
-  onCopy: () => void;
-}) {
+function StatusBanner({ matterId }: { matterId: string }) {
   const store = useStore();
+  const [confirming, setConfirming] = useState(false);
+  const [prepared, setPrepared] = useState(false);
+  const [invitationUrl, setInvitationUrl] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
   const matter = store.state.matters.find((item) => item.id === matterId);
   if (!matter) return null;
   if (matter.status === "DRAFT" || matter.status === "INVITED") {
+    const client = clientParty(matter);
+    const link = `/invite/${encodeURIComponent(matter.id)}`;
+    const ready = matter.status === "INVITED" || prepared;
+
+    async function copyInvitation() {
+      const url = `${window.location.origin}${link}`;
+      setInvitationUrl(url);
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopyMessage("Invitation link copied. No email was sent.");
+      } catch {
+        setCopyMessage("Clipboard unavailable. Select and copy the invitation link below.");
+      }
+    }
+
     return (
-      <div className="card mb-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="card mb-6 space-y-4 p-4">
         <div>
-          <p className="text-sm font-medium">
-            {matter.status === "DRAFT" ? "Invitation not sent" : "Waiting for the client to open the link"}
-          </p>
-          <p className="mt-1 text-sm text-muted">
-            Secure link: <span className="text-foreground">{link}</span>
-          </p>
+          <h2 className="text-sm font-semibold">{ready ? "Demo invitation prepared" : "Prepare a client invitation"}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted">{ready ? "The demo link is ready to copy or open. No email was sent." : "Confirm the intended recipient before preparing the demo link. No email will be sent."}</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={onCopy}>{copied ? "Copied" : "Copy link"}</Button>
-          {matter.status === "DRAFT" ? (
-            <Button variant="primary" onClick={() => store.sendInvitation(matterId)}>
-              Send invitation
-            </Button>
-          ) : (
-            <Link href={link} className="btn btn-primary">
-              Open as client
-            </Link>
-          )}
-        </div>
+        {confirming ? (
+          <div className="rounded-xl border border-line bg-brand-soft/40 p-4">
+            <p className="text-sm font-medium">Confirm invitation recipient</p>
+            <p className="mt-2 text-sm">{personName(client)}</p>
+            <p className="break-all text-sm text-muted">{client?.email || "No email on file"}</p>
+            <p className="mt-2 break-words text-sm text-muted">{matterTitle(matter)} · {store.state.firm.name}</p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Button variant="primary" className="min-h-11" onClick={() => {
+                store.sendInvitation(matterId);
+                setPrepared(true);
+                setConfirming(false);
+              }}>Confirm and prepare demo invitation</Button>
+              <Button className="min-h-11" onClick={() => setConfirming(false)}>Cancel</Button>
+            </div>
+          </div>
+        ) : ready ? (
+          <>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button className="min-h-11" onClick={copyInvitation}>Copy invitation link</Button>
+              <Link href={link} className="btn btn-primary min-h-11">Open client invitation</Link>
+            </div>
+            {invitationUrl ? (
+              <div>
+                <label htmlFor="demo-invitation-url" className="mb-1.5 block text-xs font-medium">Invitation link — select to copy manually</label>
+                <textarea id="demo-invitation-url" className="field break-all" rows={2} readOnly value={invitationUrl} onFocus={(event) => event.target.select()} />
+              </div>
+            ) : <p className="break-all text-xs text-muted">Demo invitation: {link}</p>}
+          </>
+        ) : <Button variant="primary" className="min-h-11" onClick={() => setConfirming(true)}>Prepare demo invitation</Button>}
+        <p role="status" className="text-sm text-brand">{copyMessage || (prepared ? "Demo invitation prepared. No email was sent." : "")}</p>
       </div>
     );
   }
@@ -285,14 +306,6 @@ function noneReported(intake: Intake | undefined, section: SectionId) {
 function attentionHref(matterId: string, item: Requirement) {
   if (item.status === "NEEDS_REVIEW") return `/matters/${matterId}/documents`;
   return `/matters/${matterId}/checklist#section-${item.section}`;
-}
-
-function copyLink(path: string, setCopied: (value: boolean) => void) {
-  const url = `${window.location.origin}${path}`;
-  void navigator.clipboard.writeText(url).then(() => {
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
-  });
 }
 
 function Missing() {
