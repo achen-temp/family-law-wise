@@ -8,7 +8,7 @@ import { formatDate, matterTitle } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import type { DocumentStatus } from "@/lib/types";
 
-const FILTERS = ["All", "Needs review", "Accepted"] as const;
+const FILTERS = ["All", "Needs review", "Accepted", "Rejected", "Replaced"] as const;
 
 export function MatterDocuments({ matterId }: { matterId: string }) {
   const { state } = useStore();
@@ -17,11 +17,13 @@ export function MatterDocuments({ matterId }: { matterId: string }) {
   if (!matter) return <p className="text-sm text-muted">Matter not found.</p>;
 
   const documents = state.documents
-    .filter((doc) => doc.matterId === matterId && doc.status !== "REPLACED")
+    .filter((doc) => doc.matterId === matterId)
     .filter((doc) => {
       if (filter === "Needs review") return doc.status === "NEEDS_REVIEW";
       if (filter === "Accepted") return doc.status === "ACCEPTED";
-      return doc.status !== "REJECTED";
+      if (filter === "Rejected") return doc.status === "REJECTED";
+      if (filter === "Replaced") return doc.status === "REPLACED";
+      return true;
     })
     .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
 
@@ -32,7 +34,7 @@ export function MatterDocuments({ matterId }: { matterId: string }) {
         title="Documents"
         description="Original files stay attached to checklist requirements. Open one to review it without downloading."
       />
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((item) => (
           <button
             key={item}

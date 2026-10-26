@@ -30,11 +30,12 @@ export type NewMatterInput = {
 };
 
 type Action =
+  | { type: "DISMISS_SUBMISSION_RECEIPT" }
   | { type: "CREATE_MATTER"; input: NewMatterInput; id: string }
   | { type: "UPDATE_FIRM"; patch: Partial<Firm> }
   | { type: "SEND_INVITE"; matterId: string }
   | { type: "SAVE_INTAKE"; matterId: string; intake: Intake; completedSection?: SectionId }
-  | { type: "UPLOAD"; matterId: string; requirementId: string; filename: string }
+  | { type: "UPLOAD"; matterId: string; requirementId: string; filename: string; localFile?: File }
   | { type: "MARK_UNAVAILABLE"; requirementId: string; reason: string; note: string }
   | { type: "LINK_DOCUMENT"; requirementId: string; documentId: string }
   | { type: "REQUEST"; matterId: string; requirementIds: string[]; message: string }
@@ -130,6 +131,8 @@ function touchMatter(matters: Matter[], matterId: string, patch: Partial<Matter>
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "DISMISS_SUBMISSION_RECEIPT":
+      return { ...state, submissionReceipt: undefined };
     case "UPDATE_FIRM":
       return { ...state, firm: { ...state.firm, ...action.patch } };
     case "CREATE_MATTER": {
@@ -216,18 +219,21 @@ function reducer(state: State, action: Action): State {
     }
     case "UPLOAD": {
       const requirement = state.requirements.find((item) => item.id === action.requirementId);
-      if (!requirement) return state;
+      if (!requirement || requirement.matterId !== action.matterId || !action.filename.trim()) return state;
       const documents = state.documents.map((doc) =>
         doc.requirementIds.includes(requirement.id) && doc.status === "NEEDS_REVIEW"
           ? { ...doc, status: "REPLACED" as const }
           : doc,
       );
       const nextDoc = documentFromRequirement(state, requirement, action.filename);
+      nextDoc.localFile = action.localFile;
+      if (action.localFile) nextDoc.pages = 0; // Unknown: no PDF extraction in this frontend demo.
       const nextDocs = [nextDoc, ...documents];
       const matter = state.matters.find((item) => item.id === action.matterId);
       return {
         ...state,
         documents: nextDocs,
+        submissionReceipt: { matterId: requirement.matterId, requirementId: requirement.id, documentId: nextDoc.id, kind: "UPLOAD" },
         requirements: syncRequirementFromDocs(state.requirements, nextDocs, [requirement.id]),
         matters: touchMatter(
           state.matters,
@@ -248,7 +254,7 @@ function reducer(state: State, action: Action): State {
     }
     case "MARK_UNAVAILABLE": {
       const requirement = state.requirements.find((item) => item.id === action.requirementId);
-      if (!requirement) return state;
+      if (!requirement || !action.reason.trim() || !action.note.trim()) return state;
       return {
         ...state,
         requirements: state.requirements.map((item) =>
@@ -256,8 +262,8 @@ function reducer(state: State, action: Action): State {
             ? {
                 ...item,
                 status: "NOT_AVAILABLE",
-                unavailableReason: action.reason,
-                unavailableNote: action.note,
+              unavailableReason: action.reason.trim(),
+              unavailableNote: action.note.trim(),
               }
             : item,
         ),
@@ -266,7 +272,7 @@ function reducer(state: State, action: Action): State {
           activity(
             state,
             requirement.matterId,
-            `Marked “${requirement.title}” as unavailable.`,
+            `Marked “${requirement.title}” as unavailable. Reason: ${action.reason.trim()}. Explanation: ${action.note.trim()}`,
             clientName(state, requirement.matterId),
           ),
           ...state.activity,
@@ -276,7 +282,7 @@ function reducer(state: State, action: Action): State {
     case "LINK_DOCUMENT": {
       const requirement = state.requirements.find((item) => item.id === action.requirementId);
       const document = state.documents.find((item) => item.id === action.documentId);
-      if (!requirement || !document) return state;
+      if (!requirement || !document || requirement.matterId !== document.matterId || document.status === "REJECTED" || document.status === "REPLACED") return state;
       const documents = state.documents.map((item) =>
         item.id === document.id && !item.requirementIds.includes(requirement.id)
           ? { ...item, requirementIds: [...item.requirementIds, requirement.id] }
@@ -285,6 +291,7 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         documents,
+        submissionReceipt: { matterId: requirement.matterId, requirementId: requirement.id, documentId: document.id, kind: "LINK" },
         requirements: syncRequirementFromDocs(state.requirements, documents, [requirement.id]),
         matters: touchMatter(state.matters, requirement.matterId, { status: "ATTORNEY_REVIEW" }, true),
         activity: [
@@ -299,6 +306,7 @@ function reducer(state: State, action: Action): State {
       };
     }
     case "REQUEST": {
+      if (!state.matters.some((matter) => matter.id === action.matterId) || !action.message.trim() || !action.requirementIds.length || action.requirementIds.some((id) => !state.requirements.some((item) => item.id === id && item.matterId === action.matterId))) return state;
       const count = action.requirementIds.length;
       return {
         ...state,
@@ -360,7 +368,7 @@ function reducer(state: State, action: Action): State {
     }
     case "ACCEPT_DOCUMENT": {
       const document = state.documents.find((item) => item.id === action.documentId);
-      if (!document) return state;
+      if (!document || document.status !== "NEEDS_REVIEW") return state;
       const documents = state.documents.map((item) =>
         item.id === document.id
           ? {
@@ -383,10 +391,10 @@ function reducer(state: State, action: Action): State {
     }
     case "REJECT_DOCUMENT": {
       const document = state.documents.find((item) => item.id === action.documentId);
-      if (!document) return state;
+      if (!document || document.status !== "NEEDS_REVIEW" || !action.note.trim()) return state;
       const documents = state.documents.map((item) =>
         item.id === document.id
-          ? { ...item, status: "REJECTED" as const, rejectNote: action.note, reviewedBy: state.firm.attorneyName }
+          ? { ...item, status: "REJECTED" as const, rejectNote: action.note.trim(), reviewedAt: new Date().toISOString(), reviewedBy: state.firm.attorneyName }
           : item,
       );
       return {
@@ -395,7 +403,7 @@ function reducer(state: State, action: Action): State {
         requirements: syncRequirementFromDocs(state.requirements, documents, document.requirementIds),
         matters: touchMatter(state.matters, document.matterId, { status: "WAITING_FOR_CLIENT" }),
         activity: [
-          activity(state, document.matterId, `Rejected ${document.filename}.`),
+          activity(state, document.matterId, `Rejected ${document.filename}. Reason: ${action.note.trim()}`),
           ...state.activity,
         ],
       };
@@ -464,12 +472,13 @@ function reducer(state: State, action: Action): State {
 }
 
 type Store = {
+  dismissSubmissionReceipt: () => void;
   state: State;
   createMatter: (input: NewMatterInput) => string;
   updateFirm: (patch: Partial<Firm>) => void;
   sendInvitation: (matterId: string) => void;
   saveIntake: (matterId: string, intake: Intake, completedSection?: SectionId) => void;
-  uploadToRequirement: (matterId: string, requirementId: string, filename: string) => void;
+  uploadToRequirement: (matterId: string, requirementId: string, filename: string, localFile?: File) => void;
   markUnavailable: (requirementId: string, reason: string, note: string) => void;
   linkExistingDocument: (requirementId: string, documentId: string) => void;
   requestDocuments: (matterId: string, requirementIds: string[], message: string) => void;
@@ -490,6 +499,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const api = useMemo<Store>(
     () => ({
       state,
+      dismissSubmissionReceipt: () => dispatch({ type: "DISMISS_SUBMISSION_RECEIPT" }),
       createMatter: (input) => {
         const id = `matter-${Date.now().toString(36)}`;
         dispatch({ type: "CREATE_MATTER", input, id });
@@ -499,8 +509,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sendInvitation: (matterId) => dispatch({ type: "SEND_INVITE", matterId }),
       saveIntake: (matterId, intake, completedSection) =>
         dispatch({ type: "SAVE_INTAKE", matterId, intake, completedSection }),
-      uploadToRequirement: (matterId, requirementId, filename) =>
-        dispatch({ type: "UPLOAD", matterId, requirementId, filename }),
+      uploadToRequirement: (matterId, requirementId, filename, localFile) =>
+        dispatch({ type: "UPLOAD", matterId, requirementId, filename, localFile }),
       markUnavailable: (requirementId, reason, note) =>
         dispatch({ type: "MARK_UNAVAILABLE", requirementId, reason, note }),
       linkExistingDocument: (requirementId, documentId) =>
