@@ -75,7 +75,7 @@ export function MatterOverview({ matterId }: { matterId: string }) {
 
       <StatusBanner key={matterId} matterId={matterId} />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="card p-5">
           <div className="flex items-end justify-between gap-4">
             <div>
