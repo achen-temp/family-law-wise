@@ -125,6 +125,8 @@ export type Requirement = {
 };
 
 export type DocumentFile = {
+  /** Frontend demo only; retained in memory until the application reloads. */
+  localFile?: File;
   id: string;
   matterId: string;
   requirementIds: string[];
@@ -178,6 +180,12 @@ export type BalanceFact = {
 };
 
 export type State = {
+  submissionReceipt?: {
+    matterId: string;
+    requirementId: string;
+    documentId: string;
+    kind: "UPLOAD" | "LINK";
+  };
   firm: Firm;
   matters: Matter[];
   intakes: Record<string, Intake>;

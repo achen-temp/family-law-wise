@@ -15,6 +15,7 @@ import {
 import { CHECKLIST_SECTIONS, INTAKE_STEPS } from "@/lib/content";
 import { cn, initials, personName, clientParty } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { clientRequests } from "@/lib/document-selectors";
 
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
   const pathname = usePathname();
@@ -40,9 +41,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
   }
 
   const client = personName(clientParty(matter));
-  const requested = state.requirements.filter(
-    (item) => item.matterId === matter.id && item.status === "REQUESTED",
-  ).length;
+  const requested = clientRequests(state, matter.id).length;
   const missing = state.requirements.filter(
     (item) =>
       item.matterId === matter.id &&
@@ -89,6 +88,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
           Requests
         </NavLink>
         <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Sections</p>
+        <NavLink href={`/portal/${token}/documents`} active={pathname.startsWith(`/portal/${token}/documents`)} icon={ClipboardList}>Submitted files</NavLink>
         {INTAKE_STEPS.map((step) => {
           const href = `/portal/${token}/intake/${step.id}`;
           const done = intake.completed.includes(step.id);

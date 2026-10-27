@@ -79,6 +79,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
         <NavLink href="/templates" active={pathname.startsWith("/templates")} icon={LayoutTemplate}>
           Templates
         </NavLink>
+        <NavLink href="/documents" active={pathname === "/documents"} icon={Files} badge={state.documents.filter((doc) => doc.status === "NEEDS_REVIEW").length}>Review queue</NavLink>
         <NavLink href="/settings" active={pathname.startsWith("/settings")} icon={Settings}>
           Settings
         </NavLink>

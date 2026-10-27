@@ -14,6 +14,7 @@ import {
 import { INTAKE_STEPS } from "@/lib/content";
 import { clientParty, personName, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { clientRequests } from "@/lib/document-selectors";
 
 export function PortalHome({ token }: { token: string }) {
   const { state } = useStore();
@@ -27,7 +28,7 @@ export function PortalHome({ token }: { token: string }) {
   const next = INTAKE_STEPS.find((step) => !intake.completed.includes(step.id)) ?? INTAKE_STEPS[0];
   const requirements = state.requirements.filter((item) => item.matterId === token);
   const progress = stats(requirements);
-  const requested = requirements.filter((item) => item.status === "REQUESTED");
+  const requested = clientRequests(state, token);
   const openItems = requirements.filter((item) => item.status === "MISSING" || item.status === "REQUESTED").slice(0, 4);
 
   return (
