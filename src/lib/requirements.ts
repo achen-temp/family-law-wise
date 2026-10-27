@@ -138,7 +138,8 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       const group = bankGroup(account);
       for (const month of LOOKBACK) {
         addRequirement(list, matterId, {
-          answerKey: `bank-${account.id}-${slug(month)}`,
+          // A changed account number must not inherit the earlier file's acceptance.
+          answerKey: `bank-${account.id}-${account.last4.trim()}-${slug(month)}`,
           section: "bank",
           title: `${month} statement`,
           description: `Statement covering ${month}.`,
@@ -202,7 +203,7 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       if (!card.institution.trim() || !/^\d{4}$/.test(card.last4.trim())) continue;
       const group = cardGroup(card);
       addRequirement(list, matterId, {
-        answerKey: `credit-${card.id}`,
+        answerKey: `credit-${card.id}-${card.last4.trim()}`,
         section: "credit",
         title: "Latest statement",
         description: "The most recent credit card statement.",

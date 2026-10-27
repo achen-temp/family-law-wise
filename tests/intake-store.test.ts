@@ -42,6 +42,41 @@ test("submitting changed bank answers synchronizes requirements and preserves do
   assert.deepEqual(saved.intakeDirtySections?.[id], []);
 });
 
+for (const section of ["bank", "debts"] as const) {
+  test(`${section} last-four changes require new materials and retain original file history`, () => {
+    const original = initialState.intakes[id];
+    const draft = structuredClone(original);
+    const account = section === "bank" ? draft.bank.accounts[0] : draft.debts.cards[0];
+    const requirementSection = section === "bank" ? "bank" : "credit";
+    const prior = initialState.requirements.filter((item) => item.matterId === id &&
+      item.section === requirementSection && item.groupLabel?.includes(`****${account.last4}`));
+    assert.ok(prior.some((item) => item.status === "ACCEPTED"));
+    account.last4 = "5678";
+
+    const edited = reducer(initialState, { type: "SAVE_INTAKE_DRAFT", matterId: id, intake: draft, section });
+    assert.equal(edited.requirements, initialState.requirements);
+    const saved = reducer(edited, { type: "SAVE_INTAKE", matterId: id, intake: draft, completedSection: section });
+    const replacement = saved.requirements.filter((item) => item.matterId === id &&
+      item.section === requirementSection && item.groupLabel?.includes("****5678"));
+    assert.equal(replacement.length, prior.length);
+    assert.ok(replacement.every((item) => item.status === "MISSING"));
+    assert.ok(replacement.every((item) => !saved.documents.some((doc) => doc.requirementIds.includes(item.id))));
+    assert.equal(saved.documents, initialState.documents);
+    for (const requirement of prior) {
+      const retired = saved.requirements.find((item) => item.id === requirement.id)!;
+      assert.equal(retired.groupLabel, requirement.groupLabel);
+      assert.equal(retired.status, "NOT_APPLICABLE");
+      assert.equal(retired.inactiveStatus, requirement.status);
+    }
+
+    const restored = reducer(saved, { type: "SAVE_INTAKE", matterId: id, intake: original, completedSection: section });
+    for (const requirement of prior) {
+      assert.equal(restored.requirements.find((item) => item.id === requirement.id)?.status, requirement.status);
+    }
+    assert.ok(replacement.every((item) => restored.requirements.find((candidate) => candidate.id === item.id)?.status === "NOT_APPLICABLE"));
+  });
+}
+
 test("employment edit invalidates income completion and blocks submission against unconfirmed employment", () => {
   const draft = structuredClone(initialState.intakes[id]);
   draft.employment.employer = "Another employer";

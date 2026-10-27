@@ -269,6 +269,7 @@ function AccountEditor({ accounts, onChange, error }: { accounts: BankAccount[];
   }
   return (
     <div className="space-y-3">
+      <p className="text-xs leading-relaxed text-muted">Changing the last four digits creates separate checklist items when you confirm this section. Earlier files and review decisions stay with the original digits.</p>
       {accounts.map((account, index) => (
         <fieldset key={account.id} className="space-y-3 rounded-lg border border-line p-3">
           <legend className="px-1 text-xs font-medium text-muted">Bank account {index + 1}</legend>
@@ -324,6 +325,7 @@ function CardEditor({ cards, onChange, error }: { cards: CardAccount[]; onChange
   }
   return (
     <div className="space-y-3">
+      <p className="text-xs leading-relaxed text-muted">Changing the last four digits creates separate checklist items when you confirm this section. Earlier files and review decisions stay with the original digits.</p>
       {cards.map((card, index) => (
         <fieldset key={card.id} className="space-y-3 rounded-lg border border-line p-3">
           <legend className="px-1 text-xs font-medium text-muted">Credit card {index + 1}</legend>
