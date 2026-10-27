@@ -14,11 +14,14 @@ import {
   LayoutTemplate,
   ListChecks,
   Menu,
+  MessageSquare,
   Settings,
 } from "lucide-react";
 import { CHECKLIST_SECTIONS } from "@/lib/content";
 import { cn, initials, matterTitle, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { unreadCount } from "@/lib/messaging";
+import { WiseAi } from "@/components/wise-ai/wise-ai";
 
 const MATTER_NAV = [
   { slug: "", label: "Overview", icon: LayoutDashboard },
@@ -27,6 +30,7 @@ const MATTER_NAV = [
   { slug: "/documents", label: "Documents", icon: Files },
   { slug: "/profile", label: "Financial profile", icon: Landmark },
   { slug: "/activity", label: "Activity", icon: History },
+  { slug: "/messages", label: "Messages", icon: MessageSquare },
 ];
 
 export function FirmShell({ children }: { children: ReactNode }) {
@@ -73,6 +77,9 @@ export function FirmShell({ children }: { children: ReactNode }) {
         >
           Matters
         </NavLink>
+        <NavLink href="/messages" active={pathname === "/messages"} icon={MessageSquare} badge={unreadCount(state, "ATTORNEY")}>
+          Messages
+        </NavLink>
         <NavLink href="/templates" active={pathname.startsWith("/templates")} icon={LayoutTemplate}>
           Templates
         </NavLink>
@@ -89,7 +96,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
             {MATTER_NAV.map((item) => {
               const href = `/matters/${matter.id}${item.slug}`;
               const active = item.slug === "" ? pathname === href : pathname.startsWith(href);
-              const badge = item.slug === "/checklist" ? attention : item.slug === "/documents" ? reviewDocs : 0;
+              const badge = item.slug === "/checklist" ? attention : item.slug === "/documents" ? reviewDocs : item.slug === "/messages" ? unreadCount(state, "ATTORNEY", matter.id) : 0;
               return (
                 <NavLink key={item.label} href={href} active={active} icon={item.icon} badge={badge}>
                   {item.label}
@@ -108,6 +115,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
       ) : null}
       </div>
       <div className="mt-auto p-3">
+        <div className="mb-3"><WiseAi role="ATTORNEY" matterId={matter?.id} /></div>
         <Link href="/settings" className="block rounded-xl bg-white p-3 text-foreground shadow-sm">
           <span className="flex items-center gap-2.5">
             <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
@@ -143,7 +151,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
           </button>
           <span className="truncate text-sm font-medium">{matter ? matterTitle(matter) : "Family Law Wise"}</span>
         </div>
-        <main className="w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main className="w-full px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
   );

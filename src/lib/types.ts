@@ -174,6 +174,9 @@ export type BalanceFact = {
 };
 
 export type State = {
+  threads: MessageThread[];
+  messages: Message[];
+  messageDrafts: Record<string, MessageDraft>;
   firm: Firm;
   matters: Matter[];
   intakes: Record<string, Intake>;
@@ -182,3 +185,24 @@ export type State = {
   activity: Activity[];
   discoveries: Discovery[];
 };
+
+export type ConversationRole = "ATTORNEY" | "CLIENT";
+export type MessageAudience = "SHARED" | "INTERNAL";
+export type MessageThread = {
+  id: string;
+  matterId: string;
+  subject: string;
+  createdAt: string;
+};
+export type Message = {
+  id: string;
+  threadId: string;
+  authorRole: ConversationRole;
+  authorName: string;
+  audience: MessageAudience;
+  body: string;
+  documentId?: string;
+  createdAt: string;
+  readBy: ConversationRole[];
+};
+export type MessageDraft = { body: string; documentId?: string };

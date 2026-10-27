@@ -11,10 +11,13 @@ import {
   Inbox,
   ListChecks,
   Menu,
+  MessageSquare,
 } from "lucide-react";
 import { CHECKLIST_SECTIONS, INTAKE_STEPS } from "@/lib/content";
 import { cn, initials, personName, clientParty } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { unreadCount } from "@/lib/messaging";
+import { WiseAi } from "@/components/wise-ai/wise-ai";
 
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
   const pathname = usePathname();
@@ -88,6 +91,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
         >
           Requests
         </NavLink>
+        <NavLink href={`/portal/${token}/messages`} active={pathname.startsWith(`/portal/${token}/messages`)} icon={MessageSquare} badge={unreadCount(state, "CLIENT", token)}>Messages</NavLink>
         <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Sections</p>
         {INTAKE_STEPS.map((step) => {
           const href = `/portal/${token}/intake/${step.id}`;
@@ -108,6 +112,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
         })}
       </nav>
       <div className="p-3">
+        <div className="mb-3"><WiseAi role="CLIENT" matterId={token} /></div>
         <div className="rounded-xl bg-white p-3 text-foreground shadow-sm">
           <div className="flex items-center gap-2.5">
             <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
@@ -139,7 +144,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
           </button>
           <span className="truncate text-sm font-medium">{client}</span>
         </div>
-        <main className="w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</main>
+        <main className={cn("w-full px-4 py-6 md:px-8 md:py-8", !pathname.includes("/messages") && "max-w-6xl")}>{children}</main>
       </div>
     </div>
   );

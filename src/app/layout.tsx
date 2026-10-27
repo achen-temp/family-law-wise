@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { StoreProvider } from "@/lib/store";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
+import { AppTheme } from "@/components/app-theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,10 +33,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">
-        <StoreProvider>{children}</StoreProvider>
+      {/* Grammarly and similar extensions can add body attributes before hydration. */}
+      <body className="min-h-full bg-background text-foreground" suppressHydrationWarning>
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <AppTheme><StoreProvider>{children}</StoreProvider></AppTheme>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );
