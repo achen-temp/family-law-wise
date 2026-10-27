@@ -56,7 +56,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
 
   const nav = (
     <div className="flex h-full flex-col bg-sidebar">
-      <Link href="/matters" className="flex items-center gap-2.5 bg-white px-4 py-4 text-foreground">
+      <Link href="/overview" className="flex items-center gap-2.5 bg-white px-4 py-4 text-foreground">
         <span className="grid size-9 place-items-center rounded-xl bg-brand text-sm font-semibold text-white">W</span>
         <span>
           <span className="block text-[15px] font-semibold leading-none tracking-tight">Family Law Wise</span>
@@ -65,6 +65,9 @@ export function FirmShell({ children }: { children: ReactNode }) {
       </Link>
       <div className="min-h-0 flex-1 overflow-y-auto pb-2">
       <nav className="space-y-0.5 px-2.5 pt-3">
+        <NavLink href="/overview" active={pathname === "/overview"} icon={LayoutDashboard}>
+          Overview
+        </NavLink>
         <NavLink
           href="/matters"
           active={pathname === "/matters" || pathname === "/matters/new"}
@@ -123,6 +126,7 @@ export function FirmShell({ children }: { children: ReactNode }) {
             Account settings
           </span>
         </Link>
+        <Link href="/sign-in" className="mt-2 block px-3 py-2 text-xs text-white underline">Demo sign-in</Link>
       </div>
     </div>
   );

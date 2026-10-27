@@ -7,6 +7,9 @@ import type {
   SectionId,
 } from "./types";
 
+// Deliberately pinned fixtures, independent of the date a demo matter is created.
+export const DEMO_REFERENCE_DATE = "2026-04-01";
+export const TAX_YEAR = "2025";
 export const LOOKBACK = ["January 2026", "February 2026", "March 2026"];
 
 export function slug(value: string) {
@@ -41,7 +44,7 @@ export function blankIntake(matterId: string): Intake {
       commissions: null,
     },
     income: { baseSalary: "", bonus: "" },
-    tax: { filed: null, year: "2025" },
+    tax: { filed: null, year: TAX_YEAR },
     bank: { hasAccounts: null, accounts: [] },
     investments: { has: null, institution: "" },
     retirement: { has: null, planName: "" },
@@ -54,6 +57,7 @@ export function blankIntake(matterId: string): Intake {
 }
 
 type Draft = {
+  answerKey: string;
   section: SectionId;
   title: string;
   description: string;
@@ -63,74 +67,42 @@ type Draft = {
   periodLabel?: string;
 };
 
-function requirementId(matterId: string, draft: Draft) {
-  return [
-    "req",
-    matterId,
-    draft.section,
-    slug(draft.groupLabel ?? "x"),
-    slug(draft.title),
-    slug(draft.periodLabel ?? "x"),
-  ].join("-");
-}
-
-function ensure(list: Requirement[], matterId: string, draft: Draft) {
-  const key = reqKey(draft);
-  const found = list.find((item) => item.section === draft.section && reqKey(item) === key);
-  if (found) {
-    return list.map((item) => {
-      if (item.id !== found.id) return item;
-      return {
-        ...item,
-        description: draft.description,
-        reason: draft.reason,
-        status: item.status === "NOT_APPLICABLE" ? "MISSING" : item.status,
-        unavailableReason: item.status === "NOT_APPLICABLE" ? undefined : item.unavailableReason,
-        unavailableNote: item.status === "NOT_APPLICABLE" ? undefined : item.unavailableNote,
-      };
-    });
-  }
-  const created: Requirement = {
-    id: requirementId(matterId, draft),
+function addRequirement(list: Requirement[], matterId: string, draft: Draft) {
+  list.push({
+    id: `req-${matterId}-${draft.answerKey}`,
     matterId,
     status: "MISSING",
     required: true,
     ...draft,
-  };
-  return [...list, created];
-}
-
-function closeOpen(list: Requirement[], predicate: (item: Requirement) => boolean): Requirement[] {
-  return list.map((item) =>
-    predicate(item) && (item.status === "MISSING" || item.status === "REQUESTED")
-      ? { ...item, status: "NOT_APPLICABLE" as const }
-      : item,
-  );
+  });
 }
 
 export function syncRequirements(existing: Requirement[], intake: Intake, matterId: string) {
-  let list = existing.filter((item) => item.matterId === matterId);
+  const list: Requirement[] = [];
   const rest = existing.filter((item) => item.matterId !== matterId);
   const employer = intake.employment.employer.trim() || "the employer";
 
-  list = ensure(list, matterId, {
+  if (intake.tax.filed !== false) addRequirement(list, matterId, {
+    answerKey: "tax-return",
     section: "tax",
-    title: "2025 federal tax return",
+    title: `${TAX_YEAR} federal tax return`,
     description: "Upload the complete federal return, including all schedules.",
     reason: "Required by the NJ Divorce Financial Disclosure template.",
     source: "TEMPLATE",
   });
 
   if (intake.employment.employed === true) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "employment-w2",
       section: "income",
-      title: "2025 W-2",
+      title: `${TAX_YEAR} W-2`,
       description: "The most recent Form W-2.",
       reason: `Client reported employment at ${employer}.`,
       source: "QUESTIONNAIRE",
     });
     for (const number of [1, 2, 3]) {
-      list = ensure(list, matterId, {
+      addRequirement(list, matterId, {
+        answerKey: `employment-pay-stub-${number}`,
         section: "income",
         title: `Pay stub #${number}`,
         description: number === 1 ? "The most recent pay stub." : `Pay stub ${number} of the last three.`,
@@ -139,44 +111,35 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       });
     }
     if (intake.employment.bonuses) {
-      list = ensure(list, matterId, {
+      addRequirement(list, matterId, {
+        answerKey: "employment-bonus",
         section: "income",
         title: "Bonus documentation",
         description: "A recent bonus statement, letter, or pay stub that shows the bonus.",
         reason: "Client reported bonus income.",
         source: "QUESTIONNAIRE",
       });
-    } else if (intake.employment.bonuses === false) {
-      list = closeOpen(list, (item) => item.title === "Bonus documentation");
     }
     if (intake.employment.commissions) {
-      list = ensure(list, matterId, {
+      addRequirement(list, matterId, {
+        answerKey: "employment-commission",
         section: "income",
         title: "Commission documentation",
         description: "A statement showing commission income.",
         reason: "Client reported commission income.",
         source: "QUESTIONNAIRE",
       });
-    } else if (intake.employment.commissions === false) {
-      list = closeOpen(list, (item) => item.title === "Commission documentation");
     }
-  } else if (intake.employment.employed === false) {
-    list = closeOpen(
-      list,
-      (item) => item.section === "income" && ["2025 W-2", "Pay stub #1", "Pay stub #2", "Pay stub #3", "Bonus documentation", "Commission documentation"].includes(item.title),
-    );
-  }
-
-  if (intake.tax.filed === false) {
-    list = closeOpen(list, (item) => item.section === "tax");
   }
 
   if (intake.bank.hasAccounts === true) {
     for (const account of intake.bank.accounts) {
-      if (!account.institution.trim() || account.last4.trim().length < 4) continue;
+      if (!account.institution.trim() || !/^\d{4}$/.test(account.last4.trim())) continue;
       const group = bankGroup(account);
       for (const month of LOOKBACK) {
-        list = ensure(list, matterId, {
+        addRequirement(list, matterId, {
+          // A changed account number must not inherit the earlier file's acceptance.
+          answerKey: `bank-${account.id}-${account.last4.trim()}-${slug(month)}`,
           section: "bank",
           title: `${month} statement`,
           description: `Statement covering ${month}.`,
@@ -187,12 +150,11 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
         });
       }
     }
-  } else if (intake.bank.hasAccounts === false) {
-    list = closeOpen(list, (item) => item.section === "bank");
   }
 
   if (intake.investments.has === true && intake.investments.institution.trim()) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "investments-statement",
       section: "investments",
       title: "Latest brokerage statement",
       description: "The most recent brokerage or investment statement.",
@@ -200,12 +162,11 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: intake.investments.institution.trim(),
     });
-  } else if (intake.investments.has === false) {
-    list = closeOpen(list, (item) => item.section === "investments" && item.source !== "AI_DISCOVERY");
   }
 
   if (intake.retirement.has === true && intake.retirement.planName.trim()) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "retirement-statement",
       section: "retirement",
       title: "Latest statement",
       description: "The most recent retirement plan statement.",
@@ -213,13 +174,12 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: intake.retirement.planName.trim(),
     });
-  } else if (intake.retirement.has === false) {
-    list = closeOpen(list, (item) => item.section === "retirement");
   }
 
   if (intake.realEstate.owns === true && intake.realEstate.address.trim()) {
     const group = intake.realEstate.address.trim();
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "real-estate-mortgage",
       section: "real_estate",
       title: "Mortgage statement",
       description: "The most recent mortgage statement.",
@@ -227,7 +187,8 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: group,
     });
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "real-estate-tax",
       section: "real_estate",
       title: "Property tax statement",
       description: "The most recent property tax bill or statement.",
@@ -235,15 +196,14 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: group,
     });
-  } else if (intake.realEstate.owns === false) {
-    list = closeOpen(list, (item) => item.section === "real_estate");
   }
 
   if (intake.debts.hasCards === true) {
     for (const card of intake.debts.cards) {
-      if (!card.institution.trim() || card.last4.trim().length < 4) continue;
+      if (!card.institution.trim() || !/^\d{4}$/.test(card.last4.trim())) continue;
       const group = cardGroup(card);
-      list = ensure(list, matterId, {
+      addRequirement(list, matterId, {
+        answerKey: `credit-${card.id}-${card.last4.trim()}`,
         section: "credit",
         title: "Latest statement",
         description: "The most recent credit card statement.",
@@ -252,12 +212,11 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
         groupLabel: group,
       });
     }
-  } else if (intake.debts.hasCards === false) {
-    list = closeOpen(list, (item) => item.section === "credit");
   }
 
   if (intake.debts.hasLoans === true && intake.debts.loanName.trim()) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "loan-statement",
       section: "loans",
       title: "Latest loan statement",
       description: "The most recent loan statement.",
@@ -265,24 +224,22 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: intake.debts.loanName.trim(),
     });
-  } else if (intake.debts.hasLoans === false) {
-    list = closeOpen(list, (item) => item.section === "loans");
   }
 
   if (intake.insurance.hasLife === true) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "insurance-statement",
       section: "insurance",
       title: "Life insurance statement",
       description: "A recent statement showing the policy and any cash value.",
       reason: "Client reported a life insurance policy.",
       source: "QUESTIONNAIRE",
     });
-  } else if (intake.insurance.hasLife === false) {
-    list = closeOpen(list, (item) => item.section === "insurance");
   }
 
   if (intake.business.has === true && intake.business.name.trim()) {
-    list = ensure(list, matterId, {
+    addRequirement(list, matterId, {
+      answerKey: "business-financials",
       section: "business",
       title: "Recent business financials",
       description: "A recent profit and loss statement or business tax return.",
@@ -290,21 +247,23 @@ export function syncRequirements(existing: Requirement[], intake: Intake, matter
       source: "QUESTIONNAIRE",
       groupLabel: intake.business.name.trim(),
     });
-  } else if (intake.business.has === false) {
-    list = closeOpen(list, (item) => item.section === "business");
   }
 
-  return [...rest, ...list];
+  const previous = existing.filter((item) => item.matterId === matterId);
+  const reconciled = previous.map((item): Requirement => {
+    if (!item.answerKey) return item; // Attorney requests and discovery are independently managed.
+    const next = list.find((candidate) => candidate.answerKey === item.answerKey);
+    if (next) {
+      return { ...item, ...next, id: item.id, status: item.inactiveStatus ?? item.status,
+        inactiveStatus: undefined };
+    }
+    if (item.status === "NOT_APPLICABLE") return item;
+    return { ...item, status: "NOT_APPLICABLE", inactiveStatus: item.status };
+  });
+  const added = list.filter((item) => !previous.some((prior) => prior.answerKey === item.answerKey));
+  return [...rest, ...reconciled, ...added];
 }
 
 export function baselineRequirements(matterId: string) {
-  const intake = blankIntake(matterId);
-  intake.employment.employed = true;
-  intake.employment.payFrequency = "Bi-weekly";
-  intake.tax.filed = true;
-  return syncRequirements([], intake, matterId).map((item) => ({
-    ...item,
-    source: "TEMPLATE" as const,
-    reason: "Required by the NJ Divorce Financial Disclosure template.",
-  }));
+  return syncRequirements([], blankIntake(matterId), matterId);
 }

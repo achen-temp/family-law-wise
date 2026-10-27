@@ -118,6 +118,10 @@ export type Requirement = {
   periodLabel?: string;
   unavailableReason?: string;
   unavailableNote?: string;
+  /** Stable questionnaire identity; display labels may change without breaking file links. */
+  answerKey?: string;
+  /** Set only when an answer retires this requirement, so reactivation preserves its prior decision. */
+  inactiveStatus?: RequirementStatus;
 };
 
 export type DocumentFile = {
@@ -177,6 +181,8 @@ export type State = {
   firm: Firm;
   matters: Matter[];
   intakes: Record<string, Intake>;
+  intakeDrafts?: Record<string, Intake>;
+  intakeDirtySections?: Record<string, SectionId[]>;
   requirements: Requirement[];
   documents: DocumentFile[];
   activity: Activity[];

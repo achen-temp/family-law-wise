@@ -26,7 +26,7 @@ export function MatterIntake({ matterId }: { matterId: string }) {
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold">{step.label}</h2>
               <span className="text-xs text-muted">
-                {intake.completed.includes(step.id) ? "Answered" : "Not started"}
+                {state.intakeDirtySections?.[matterId]?.includes(step.id) ? "Draft awaiting confirmation" : intake.completed.includes(step.id) ? "Answered" : "Not confirmed"}
               </span>
             </div>
             <div className="mt-3">{renderSection(step.id, intake)}</div>
@@ -38,8 +38,8 @@ export function MatterIntake({ matterId }: { matterId: string }) {
 }
 
 function renderSection(section: SectionId, intake: Intake) {
-  if (!intake.completed.includes(section) && section !== "personal") {
-    return <p className="text-sm text-muted">Waiting for the client.</p>;
+  if (!intake.completed.includes(section)) {
+    return <p className="text-sm text-muted">Waiting for the client to confirm this section. Draft edits do not update the checklist.</p>;
   }
   switch (section) {
     case "personal":
@@ -53,17 +53,20 @@ function renderSection(section: SectionId, intake: Intake) {
       return (
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <Item label="Employed" value={yesNo(intake.employment.employed)} />
-          <Item label="Employer" value={intake.employment.employer || "—"} />
-          <Item label="Pay frequency" value={intake.employment.payFrequency || "—"} />
-          <Item label="Bonuses" value={yesNo(intake.employment.bonuses)} />
-          <Item label="Commissions" value={yesNo(intake.employment.commissions)} />
+          {intake.employment.employed ? <>
+            <Item label="Employer" value={intake.employment.employer || "—"} />
+            <Item label="Pay frequency" value={intake.employment.payFrequency || "—"} />
+            <Item label="Bonuses" value={yesNo(intake.employment.bonuses)} />
+            <Item label="Commissions" value={yesNo(intake.employment.commissions)} />
+          </> : null}
         </dl>
       );
     case "income":
+      if (!intake.employment.employed) return <p className="text-sm">No employment income reported.</p>;
       return (
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <Item label="Base salary" value={formatMoney(intake.income.baseSalary)} />
-          <Item label="Bonus" value={intake.income.bonus ? formatMoney(intake.income.bonus) : "—"} />
+          {intake.employment.bonuses || intake.employment.commissions ? <Item label="Bonus and commission income" value={intake.income.bonus ? formatMoney(intake.income.bonus) : "—"} /> : null}
         </dl>
       );
     case "tax":
@@ -93,9 +96,9 @@ function renderSection(section: SectionId, intake: Intake) {
     case "debts":
       return (
         <div className="space-y-2 text-sm">
-          {intake.debts.cards.map((card) => (
+          {intake.debts.hasCards ? intake.debts.cards.map((card) => (
             <p key={card.id}>{cardGroup(card)}</p>
-          ))}
+          )) : null}
           {intake.debts.hasLoans ? <p>{intake.debts.loanName}</p> : null}
           {intake.debts.hasCards === false && intake.debts.hasLoans === false ? <p>None reported.</p> : null}
         </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useContext, useMemo, useReducer, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 import { sectionLabel } from "./format";
 import { baselineRequirements, blankIntake, slug, syncRequirements } from "./requirements";
 import { initialState } from "./seed";
 import { TEMPLATE_ID } from "./content";
+import { normalizeIntakeSection, validateIntakeSection } from "./intake-validation";
 import type {
   DocumentFile,
   Firm,
@@ -34,6 +35,7 @@ type Action =
   | { type: "UPDATE_FIRM"; patch: Partial<Firm> }
   | { type: "SEND_INVITE"; matterId: string }
   | { type: "SAVE_INTAKE"; matterId: string; intake: Intake; completedSection?: SectionId }
+  | { type: "SAVE_INTAKE_DRAFT"; matterId: string; intake: Intake; section: SectionId }
   | { type: "UPLOAD"; matterId: string; requirementId: string; filename: string }
   | { type: "MARK_UNAVAILABLE"; requirementId: string; reason: string; note: string }
   | { type: "LINK_DOCUMENT"; requirementId: string; documentId: string }
@@ -72,9 +74,15 @@ function liveDocs(documents: DocumentFile[], requirementId: string) {
   );
 }
 
-function syncRequirementFromDocs(requirements: Requirement[], documents: DocumentFile[], ids: string[]) {
+function syncRequirementFromDocs(requirements: Requirement[], documents: DocumentFile[], ids: string[]): Requirement[] {
   return requirements.map((requirement) => {
     if (!ids.includes(requirement.id)) return requirement;
+    if (requirement.status === "NOT_APPLICABLE" && requirement.inactiveStatus) {
+      const [updated] = syncRequirementFromDocs(
+        [{ ...requirement, status: requirement.inactiveStatus, inactiveStatus: undefined }], documents, ids,
+      );
+      return { ...updated, status: "NOT_APPLICABLE" as const, inactiveStatus: updated.status };
+    }
     if (requirement.status === "WAIVED" || requirement.status === "NOT_APPLICABLE") return requirement;
     const live = liveDocs(documents, requirement.id);
     if (live.some((doc) => doc.status === "ACCEPTED")) {
@@ -128,7 +136,13 @@ function touchMatter(matters: Matter[], matterId: string, patch: Partial<Matter>
   );
 }
 
-function reducer(state: State, action: Action): State {
+function intakeSectionKey(section: SectionId): keyof Omit<Intake, "matterId" | "completed"> {
+  if (section === "real_estate") return "realEstate";
+  if (section === "credit" || section === "loans") return "debts";
+  return section;
+}
+
+export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "UPDATE_FIRM":
       return { ...state, firm: { ...state.firm, ...action.patch } };
@@ -181,15 +195,43 @@ function reducer(state: State, action: Action): State {
               ? "INVITED"
               : state.matters.find((matter) => matter.id === action.matterId)?.status,
         }),
-        activity: [activity(state, action.matterId, "Sent the client invitation."), ...state.activity],
+        activity: [activity(state, action.matterId, "Prepared a demo client invitation. No email sent."), ...state.activity],
       };
+    case "SAVE_INTAKE_DRAFT": {
+      const previous = state.intakes[action.matterId];
+      if (!previous) return state;
+      const key = intakeSectionKey(action.section);
+      const draft = state.intakeDrafts?.[action.matterId] ?? previous;
+      if (JSON.stringify(draft[key]) === JSON.stringify(action.intake[key])) return state;
+      const completed = previous.completed.filter((section) => section !== action.section &&
+        !(action.section === "employment" && section === "income"));
+      const dirty = new Set(state.intakeDirtySections?.[action.matterId] ?? []);
+      dirty.add(action.section);
+      const reopen = state.matters.some((matter) => matter.id === action.matterId && matter.status === "COMPLETE");
+      return {
+        ...state,
+        matters: reopen ? touchMatter(state.matters, action.matterId, { status: "CLIENT_IN_PROGRESS" }, true) : state.matters,
+        activity: reopen ? [activity(state, action.matterId,
+          "Reopened the collection because questionnaire answers changed.", clientName(state, action.matterId)), ...state.activity] : state.activity,
+        intakes: { ...state.intakes, [action.matterId]: { ...previous, completed } },
+        intakeDrafts: { ...state.intakeDrafts, [action.matterId]: { ...draft, [key]: action.intake[key], completed } },
+        intakeDirtySections: { ...state.intakeDirtySections, [action.matterId]: [...dirty] },
+      };
+    }
     case "SAVE_INTAKE": {
-      const already = action.intake.completed.includes(action.completedSection ?? "personal");
-      const completed =
-        action.completedSection && !action.intake.completed.includes(action.completedSection)
-          ? [...action.intake.completed, action.completedSection]
-          : action.intake.completed;
-      const intake = { ...action.intake, matterId: action.matterId, completed };
+      const previous = state.intakes[action.matterId];
+      const section = action.completedSection;
+      if (!previous || !section) return state;
+      if (section === "income" && !previous.completed.includes("employment")) return state;
+      const key = intakeSectionKey(section);
+      const normalized = normalizeIntakeSection(section, { ...previous, [key]: action.intake[key] });
+      if (validateIntakeSection(section, normalized)) return state;
+      const already = previous.completed.includes(section);
+      const completed = [...new Set([...previous.completed, section])]
+        .filter((item) => !validateIntakeSection(item, normalized));
+      const intake = { ...normalized, completed };
+      const dirty = (state.intakeDirtySections?.[action.matterId] ?? []).filter((item) => item !== section);
+      const draft = { ...(state.intakeDrafts?.[action.matterId] ?? intake), [key]: intake[key], completed };
       const matter = state.matters.find((item) => item.id === action.matterId);
       const status =
         matter && (matter.status === "DRAFT" || matter.status === "INVITED")
@@ -198,6 +240,8 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         intakes: { ...state.intakes, [action.matterId]: intake },
+        intakeDrafts: { ...state.intakeDrafts, [action.matterId]: draft },
+        intakeDirtySections: { ...state.intakeDirtySections, [action.matterId]: dirty },
         requirements: syncRequirements(state.requirements, intake, action.matterId),
         matters: touchMatter(state.matters, action.matterId, { status }, true),
         activity:
@@ -350,7 +394,7 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         requirements: state.requirements.map((item) =>
-          item.id === action.requirementId ? { ...item, status: action.status } : item,
+          item.id === action.requirementId ? { ...item, status: action.status, inactiveStatus: undefined } : item,
         ),
         activity: [
           activity(state, requirement.matterId, `${label} “${requirement.title}”.`),
@@ -469,6 +513,7 @@ type Store = {
   updateFirm: (patch: Partial<Firm>) => void;
   sendInvitation: (matterId: string) => void;
   saveIntake: (matterId: string, intake: Intake, completedSection?: SectionId) => void;
+  saveIntakeDraft: (matterId: string, intake: Intake, section: SectionId) => void;
   uploadToRequirement: (matterId: string, requirementId: string, filename: string) => void;
   markUnavailable: (requirementId: string, reason: string, note: string) => void;
   linkExistingDocument: (requirementId: string, documentId: string) => void;
@@ -487,6 +532,13 @@ const StoreContext = createContext<Store | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const hasDrafts = Object.values(state.intakeDirtySections ?? {}).some((sections) => sections.length > 0);
+  useEffect(() => {
+    if (!hasDrafts) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasDrafts]);
   const api = useMemo<Store>(
     () => ({
       state,
@@ -499,6 +551,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sendInvitation: (matterId) => dispatch({ type: "SEND_INVITE", matterId }),
       saveIntake: (matterId, intake, completedSection) =>
         dispatch({ type: "SAVE_INTAKE", matterId, intake, completedSection }),
+      saveIntakeDraft: (matterId, intake, section) =>
+        dispatch({ type: "SAVE_INTAKE_DRAFT", matterId, intake, section }),
       uploadToRequirement: (matterId, requirementId, filename) =>
         dispatch({ type: "UPLOAD", matterId, requirementId, filename }),
       markUnavailable: (requirementId, reason, note) =>
