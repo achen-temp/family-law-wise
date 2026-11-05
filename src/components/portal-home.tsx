@@ -8,12 +8,14 @@ import {
   Inbox,
   ListChecks,
   Mail,
+  MessageSquare,
   Square,
   Upload,
 } from "lucide-react";
 import { INTAKE_STEPS } from "@/lib/content";
 import { clientParty, personName, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { unreadCount } from "@/lib/messaging";
 import { clientRequests } from "@/lib/document-selectors";
 
 export function PortalHome({ token }: { token: string }) {
@@ -30,6 +32,8 @@ export function PortalHome({ token }: { token: string }) {
   const progress = stats(requirements);
   const requested = clientRequests(state, token);
   const openItems = requirements.filter((item) => item.status === "MISSING" || item.status === "REQUESTED").slice(0, 4);
+  const unread = unreadCount(state, "CLIENT", token);
+  const messageThread = state.threads.find((thread) => thread.matterId === token && unreadCount(state, "CLIENT", token, thread.id) > 0);
 
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_240px]">
@@ -43,6 +47,7 @@ export function PortalHome({ token }: { token: string }) {
           {draftCount > 0 ? ` ${draftCount} questionnaire section${draftCount === 1 ? " has" : "s have"} draft edits. Confirm each section to update the checklist.` : ""}
         </p>
         <ul className="mt-5 space-y-3">
+          <TodoCard href={`/portal/${token}/messages${messageThread ? `?thread=${messageThread.id}` : ""}`} icon={MessageSquare} tone="bg-brand-soft text-brand" title={unread ? `${unread} new message${unread === 1 ? "" : "s"} from your legal team` : "Messages with your legal team"} detail={unread ? "Read the update and reply in your matter conversation." : "Ask a question or share an update with your attorney."} />
           <TodoCard
             href={`/portal/${token}/intake/${next.id}`}
             icon={ClipboardList}

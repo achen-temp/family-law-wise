@@ -5,6 +5,7 @@ import { sectionLabel } from "./format";
 import { baselineRequirements, blankIntake, slug, syncRequirements } from "./requirements";
 import { initialState } from "./seed";
 import { TEMPLATE_ID } from "./content";
+import { messagingReducer, type MessagingAction } from "./messaging";
 import { normalizeIntakeSection, validateIntakeSection } from "./intake-validation";
 import type {
   DocumentFile,
@@ -16,6 +17,9 @@ import type {
   RequirementStatus,
   SectionId,
   State,
+  ConversationRole,
+  MessageAudience,
+  MessageDraft,
 } from "./types";
 
 export type NewMatterInput = {
@@ -31,6 +35,7 @@ export type NewMatterInput = {
 };
 
 type Action =
+  | MessagingAction
   | { type: "DISMISS_SUBMISSION_RECEIPT" }
   | { type: "CREATE_MATTER"; input: NewMatterInput; id: string }
   | { type: "UPDATE_FIRM"; patch: Partial<Firm> }
@@ -145,6 +150,11 @@ function intakeSectionKey(section: SectionId): keyof Omit<Intake, "matterId" | "
 
 export function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "CREATE_THREAD":
+    case "SEND_MESSAGE":
+    case "READ_THREAD":
+    case "SAVE_MESSAGE_DRAFT":
+      return messagingReducer(state, action);
     case "DISMISS_SUBMISSION_RECEIPT":
       return { ...state, submissionReceipt: undefined };
     case "UPDATE_FIRM":
@@ -518,6 +528,10 @@ export function reducer(state: State, action: Action): State {
 type Store = {
   dismissSubmissionReceipt: () => void;
   state: State;
+  createThread: (matterId: string, subject: string) => string;
+  sendMessage: (threadId: string, role: ConversationRole, audience: MessageAudience, draft: MessageDraft) => void;
+  readThread: (threadId: string, role: ConversationRole) => void;
+  saveMessageDraft: (threadId: string, role: ConversationRole, audience: MessageAudience, draft: MessageDraft) => void;
   createMatter: (input: NewMatterInput) => string;
   updateFirm: (patch: Partial<Firm>) => void;
   sendInvitation: (matterId: string) => void;
@@ -552,6 +566,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       dismissSubmissionReceipt: () => dispatch({ type: "DISMISS_SUBMISSION_RECEIPT" }),
+      createThread: (matterId, subject) => {
+        const id = `thread-${crypto.randomUUID()}`;
+        dispatch({ type: "CREATE_THREAD", thread: { id, matterId, subject, createdAt: new Date().toISOString() } });
+        return id;
+      },
+      sendMessage: (threadId, role, audience, draft) => {
+        const thread = state.threads.find((item) => item.id === threadId);
+        if (!thread) return;
+        dispatch({ type: "SEND_MESSAGE", message: {
+          id: `msg-${crypto.randomUUID()}`, threadId, authorRole: role, audience,
+          authorName: role === "ATTORNEY" ? state.firm.attorneyName : clientName(state, thread.matterId),
+          body: draft.body, documentId: draft.documentId, createdAt: new Date().toISOString(), readBy: [role],
+        } });
+      },
+      readThread: (threadId, role) => dispatch({ type: "READ_THREAD", threadId, role }),
+      saveMessageDraft: (threadId, role, audience, draft) => dispatch({ type: "SAVE_MESSAGE_DRAFT", threadId, role, audience, draft }),
       createMatter: (input) => {
         const id = `matter-${Date.now().toString(36)}`;
         dispatch({ type: "CREATE_MATTER", input, id });

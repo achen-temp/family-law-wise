@@ -1,4 +1,5 @@
 import { INTAKE_STEPS, TEMPLATE_ID } from "./content";
+import { initialThreads, initialMessages } from "./messaging-seed";
 import { reqKey, slug, syncRequirements } from "./requirements";
 import type {
   BalanceFact,
@@ -286,6 +287,13 @@ export const BALANCES: BalanceFact[] = [
 ];
 
 export const initialState: State = {
+  threads: initialThreads,
+  messages: initialMessages.map((message) => message.id === "msg-3" ? {
+    ...message,
+    documentId: johnRequirements.find((item) => item.section === "bank" && item.status === "NEEDS_REVIEW")
+      ? `doc-${johnRequirements.find((item) => item.section === "bank" && item.status === "NEEDS_REVIEW")!.id}` : undefined,
+  } : message),
+  messageDrafts: {},
   firm: {
     name: "Hartwell Family Law",
     attorneyName: "Alex Morgan",

@@ -10,7 +10,7 @@ function matter(id: string, status: Matter["status"]): Matter {
 }
 
 function state(matters: Matter[], requirements: Requirement[] = [], documents: DocumentFile[] = []): State {
-  return { firm: { name: "Firm", attorneyName: "Attorney", attorneyEmail: "a@example.com", firstReminderDays: 3, secondReminderDays: 7, attorneyAlertDays: 10 }, matters, requirements, documents, intakes: {}, activity: [], discoveries: [] };
+  return { threads: [], messages: [], messageDrafts: {}, firm: { name: "Firm", attorneyName: "Attorney", attorneyEmail: "a@example.com", firstReminderDays: 3, secondReminderDays: 7, attorneyAlertDays: 10 }, matters, requirements, documents, intakes: {}, activity: [], discoveries: [] };
 }
 
 function requirement(matterId: string, status: Requirement["status"]): Requirement {
