@@ -16,6 +16,7 @@ import { INTAKE_STEPS } from "@/lib/content";
 import { clientParty, personName, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
+import { clientRequests } from "@/lib/document-selectors";
 
 export function PortalHome({ token }: { token: string }) {
   const { state } = useStore();
@@ -24,11 +25,12 @@ export function PortalHome({ token }: { token: string }) {
   if (!matter || !intake) return null;
 
   const client = clientParty(matter);
-  const done = intake.completed.length;
+  const done = INTAKE_STEPS.filter((step) => intake.completed.includes(step.id)).length;
+  const draftCount = state.intakeDirtySections?.[token]?.length ?? 0;
   const next = INTAKE_STEPS.find((step) => !intake.completed.includes(step.id)) ?? INTAKE_STEPS[0];
   const requirements = state.requirements.filter((item) => item.matterId === token);
   const progress = stats(requirements);
-  const requested = requirements.filter((item) => item.status === "REQUESTED");
+  const requested = clientRequests(state, token);
   const openItems = requirements.filter((item) => item.status === "MISSING" || item.status === "REQUESTED").slice(0, 4);
   const unread = unreadCount(state, "CLIENT", token);
   const messageThread = state.threads.find((thread) => thread.matterId === token && unreadCount(state, "CLIENT", token, thread.id) > 0);
@@ -39,6 +41,10 @@ export function PortalHome({ token }: { token: string }) {
         <h1 className="text-2xl font-semibold tracking-tight">To-do</h1>
         <p className="mt-1 text-sm text-muted">
           {state.firm.attorneyName} requested financial information for your {matter.matterType.toLowerCase()} matter.
+        </p>
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          This is a demo preview. Answers and drafts remain only while it stays open; refreshing or closing resets changes.
+          {draftCount > 0 ? ` ${draftCount} questionnaire section${draftCount === 1 ? " has" : "s have"} draft edits. Confirm each section to update the checklist.` : ""}
         </p>
         <ul className="mt-5 space-y-3">
           <TodoCard href={`/portal/${token}/messages${messageThread ? `?thread=${messageThread.id}` : ""}`} icon={MessageSquare} tone="bg-brand-soft text-brand" title={unread ? `${unread} new message${unread === 1 ? "" : "s"} from your legal team` : "Messages with your legal team"} detail={unread ? "Read the update and reply in your matter conversation." : "Ask a question or share an update with your attorney."} />

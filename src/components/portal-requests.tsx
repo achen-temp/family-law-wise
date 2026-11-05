@@ -4,16 +4,17 @@ import Link from "next/link";
 import { PageHeader, StatusPill } from "@/components/ui";
 import { REQUIREMENT_LABEL, formatDate } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { clientRequests, latestDocument } from "@/lib/document-selectors";
 
 export function PortalRequests({ token }: { token: string }) {
   const { state, submitDisclosure } = useStore();
   const matter = state.matters.find((item) => item.id === token);
-  const items = state.requirements.filter((item) => item.matterId === token && item.status === "REQUESTED");
+  const items = clientRequests(state, token);
   if (!matter) return null;
   const done = items.length === 0;
 
   return (
-    <div>
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <PageHeader
         eyebrow="From your attorney"
         title={done ? "No open request" : `${items.length} document${items.length === 1 ? "" : "s"} needed`}
@@ -37,12 +38,19 @@ export function PortalRequests({ token }: { token: string }) {
       ) : (
         <div className="card divide-y divide-line">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between gap-3 px-4 py-3">
+            <div key={item.id} className="flex flex-col justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
               <div>
                 <p className="text-sm font-medium">{item.groupLabel ? `${item.groupLabel} · ${item.title}` : item.title}</p>
                 <p className="text-xs text-muted">{item.description}</p>
+                {latestDocument(state.documents, item.id)?.status === "REJECTED" ? (
+                  <div className="mt-2 text-sm text-rose-800">
+                    <p>Returned: {latestDocument(state.documents, item.id)?.filename}</p>
+                    <p>{latestDocument(state.documents, item.id)?.rejectNote}</p>
+                    <Link className="text-brand underline" href={`/portal/${token}/documents/${latestDocument(state.documents, item.id)!.id}`}>View file and review details</Link>
+                  </div>
+                ) : null}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <StatusPill status={item.status} label={REQUIREMENT_LABEL[item.status]} />
                 <Link href={`/portal/${token}/checklist/${item.id}`} className="btn btn-primary h-8 px-3 text-xs">
                   Upload

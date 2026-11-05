@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button, PageHeader, StatusPill } from "@/components/ui";
 import { REQUIREMENT_LABEL, formatDate, matterTitle } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { LocalFilePreview } from "@/components/local-file-preview";
 
 export function DocumentReview({ matterId, documentId }: { matterId: string; documentId: string }) {
   const store = useStore();
@@ -12,6 +13,7 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
   const document = store.state.documents.find((item) => item.id === documentId && item.matterId === matterId);
   const [rejecting, setRejecting] = useState(false);
   const [note, setNote] = useState("");
+  const [error, setError] = useState("");
 
   if (!matter || !document) {
     return <p className="text-sm text-muted">Document not found.</p>;
@@ -20,7 +22,7 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
   const linked = store.state.requirements.filter((item) => document.requirementIds.includes(item.id));
 
   return (
-    <div>
+    <div className="min-w-0 [overflow-wrap:anywhere]">
       <PageHeader
         eyebrow={matterTitle(matter)}
         title={document.documentType}
@@ -31,15 +33,19 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
           </Link>
         }
       />
+      <div className="mb-4 flex flex-wrap gap-3 text-sm">
+        <Link href="/documents" className="text-brand underline">Global review queue</Link>
+        <Link href={`/portal/${matterId}/documents/${document.id}`} className="text-brand underline">Demo: view file as client</Link>
+      </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <DocumentCanvas
+        {document.localFile ? <LocalFilePreview file={document.localFile} /> : <div><p className="mb-3 text-sm text-muted">Demo sample preview — figures below are illustrative, not extracted from an uploaded file.</p><DocumentCanvas
           type={document.documentType}
           institution={document.institution}
           owner={document.owner}
           period={document.periodLabel}
           filename={document.filename}
           pages={document.pages}
-        />
+        /></div>}
         <aside className="card h-fit min-w-0 p-4">
           <h2 className="text-sm font-semibold">Information</h2>
           <dl className="mt-3 space-y-3 text-sm">
@@ -55,12 +61,19 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
             <p className="text-xs font-medium text-muted">Satisfies</p>
             <ul className="mt-2 space-y-2">
               {linked.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-2 text-sm">
+                <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <span>{item.title}</span>
                   <StatusPill status={item.status} label={REQUIREMENT_LABEL[item.status]} />
                 </li>
               ))}
             </ul>
+          </div>
+          <div className="mt-4 border-t border-line pt-4">
+            <h2 className="text-sm font-semibold">Other submissions</h2>
+            <p className="mt-1 text-xs text-muted">Other files linked to the same requirements and their review decisions.</p>
+            {store.state.documents.filter((other) => other.matterId === matterId && other.id !== document.id && other.requirementIds.some((id) => document.requirementIds.includes(id))).map((other) => (
+              <Link key={other.id} href={`/matters/${matterId}/documents/${other.id}`} className="mt-2 block break-words text-sm text-brand underline">{other.filename} · {formatDate(other.uploadedAt)} · {other.status}</Link>
+            ))}
           </div>
           {document.status === "NEEDS_REVIEW" ? (
             <div className="mt-4 space-y-2 border-t border-line pt-4">
@@ -72,15 +85,20 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                   />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button onClick={() => setRejecting(false)}>Cancel</Button>
                     <Button
                       variant="danger"
-                      onClick={() => store.rejectDocument(document.id, note || "Please upload a clearer copy.")}
+                      onClick={() => {
+                        if (!note.trim()) { setError("Enter a reason so the client knows what to provide."); return; }
+                        setError("");
+                        store.rejectDocument(document.id, note.trim());
+                      }}
                     >
                       Confirm rejection
                     </Button>
                   </div>
+                  {error ? <p role="alert" className="text-sm text-rose-800">{error}</p> : null}
                 </>
               ) : (
                 <div className="flex gap-2">
@@ -95,8 +113,9 @@ export function DocumentReview({ matterId, documentId }: { matterId: string; doc
             </div>
           ) : (
             <p className="mt-4 border-t border-line pt-4 text-sm text-muted">
-              {document.status === "ACCEPTED" ? "Accepted. The checklist item is complete." : "This file is no longer the current upload."}
+              {document.status === "ACCEPTED" ? "File accepted." : document.status === "REJECTED" ? "Returned for correction." : "This file has been replaced."}
               {document.rejectNote ? ` ${document.rejectNote}` : ""}
+              {document.reviewedAt ? ` Reviewed ${formatDate(document.reviewedAt)}.` : ""}
             </p>
           )}
         </aside>
@@ -130,10 +149,10 @@ function DocumentCanvas({
   pages: number;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-[#f3f5f9] p-4 md:p-6">
-      <article className="mx-auto min-h-[560px] max-w-[560px] bg-white px-8 py-8 shadow-sm">
-        <header className="flex items-start justify-between border-b border-neutral-200 pb-4">
-          <div>
+    <div className="min-w-0 rounded-xl border border-line bg-[#f3f5f9] p-3 md:p-6">
+      <article className="mx-auto min-h-[560px] max-w-[560px] bg-white px-4 py-6 shadow-sm sm:px-8 sm:py-8">
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 pb-4">
+          <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.14em] text-neutral-500">{type}</p>
             <h2 className="mt-1 text-lg font-semibold text-neutral-900">{institution || type}</h2>
             <p className="mt-1 text-sm text-neutral-600">{owner}</p>

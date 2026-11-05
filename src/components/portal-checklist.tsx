@@ -9,13 +9,16 @@ import { useStore } from "@/lib/store";
 import type { Requirement } from "@/lib/types";
 
 export function PortalChecklist({ token }: { token: string }) {
-  const { state, submitDisclosure } = useStore();
+  const { state, submitDisclosure, dismissSubmissionReceipt } = useStore();
   const matter = state.matters.find((item) => item.id === token);
   const requirements = state.requirements.filter(
     (item) => item.matterId === token && item.status !== "NOT_APPLICABLE" && item.status !== "WAIVED",
   );
   if (!matter) return null;
   const progress = stats(requirements);
+  const receipt = state.submissionReceipt?.matterId === token ? state.submissionReceipt : undefined;
+  const submitted = receipt && state.documents.find((doc) => doc.id === receipt.documentId && doc.matterId === token);
+  const submittedFor = receipt && state.requirements.find((item) => item.id === receipt.requirementId && item.matterId === token);
 
   return (
     <div>
@@ -32,6 +35,20 @@ export function PortalChecklist({ token }: { token: string }) {
         }
       />
       <div className="card mb-5 p-4">
+        {submitted && submittedFor ? (
+          <section role="status" aria-label="Submission result" className="mb-4 space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm">
+            <h2 className="font-semibold">{receipt.kind === "UPLOAD" ? "File submitted successfully" : "Existing file linked successfully"}</h2>
+            <p className="break-words [overflow-wrap:anywhere]">{submitted.filename}</p>
+            <p className="break-words">For: {submittedFor.groupLabel ? `${submittedFor.groupLabel} · ` : ""}{submittedFor.title}</p>
+            <p>{submitted.status === "NEEDS_REVIEW" ? "Needs review — waiting for your attorney. Submission does not mean acceptance." : submitted.status === "ACCEPTED" ? "This file already has an attorney acceptance. Linking it does not record a new review." : "The review status has changed. Open the file for the latest decision."}</p>
+            <p className="text-xs text-muted">Demo session only. Refreshing resets changes.</p>
+            <div className="flex flex-wrap gap-3">
+              <Link href={`/portal/${token}/documents/${submitted.id}`} className="font-medium text-brand underline">View submitted file</Link>
+              <button type="button" onClick={dismissSubmissionReceipt} className="text-brand underline">Dismiss confirmation</button>
+            </div>
+          </section>
+        ) : null}
+        {progress.review > 0 ? <p className="mb-3 text-sm text-brand" role="status">Submitted files are waiting for attorney review. Submission does not mean acceptance.</p> : null}
         <div className="mb-2 flex items-center justify-between text-sm">
           <span>{progress.pct}% accepted</span>
           <span className="text-muted">

@@ -1,4 +1,5 @@
 import { INTAKE_STEPS } from "./content";
+import { clientRequests } from "./document-selectors";
 import { needsReply, unreadCount } from "./messaging";
 import type { ConversationRole, State } from "./types";
 
@@ -93,7 +94,7 @@ export function nextSteps(
       });
   } else {
     const requested =
-      requirements.find((item) => item.status === "REQUESTED") ??
+      clientRequests(state, matterId)[0] ??
       requirements.find((item) => item.status === "MISSING");
     if (requested)
       result.push({

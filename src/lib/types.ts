@@ -118,9 +118,15 @@ export type Requirement = {
   periodLabel?: string;
   unavailableReason?: string;
   unavailableNote?: string;
+  /** Stable questionnaire identity; display labels may change without breaking file links. */
+  answerKey?: string;
+  /** Set only when an answer retires this requirement, so reactivation preserves its prior decision. */
+  inactiveStatus?: RequirementStatus;
 };
 
 export type DocumentFile = {
+  /** Frontend demo only; retained in memory until the application reloads. */
+  localFile?: File;
   id: string;
   matterId: string;
   requirementIds: string[];
@@ -177,9 +183,17 @@ export type State = {
   threads: MessageThread[];
   messages: Message[];
   messageDrafts: Record<string, MessageDraft>;
+  submissionReceipt?: {
+    matterId: string;
+    requirementId: string;
+    documentId: string;
+    kind: "UPLOAD" | "LINK";
+  };
   firm: Firm;
   matters: Matter[];
   intakes: Record<string, Intake>;
+  intakeDrafts?: Record<string, Intake>;
+  intakeDirtySections?: Record<string, SectionId[]>;
   requirements: Requirement[];
   documents: DocumentFile[];
   activity: Activity[];

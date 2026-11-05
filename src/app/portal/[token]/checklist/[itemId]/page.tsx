@@ -6,5 +6,5 @@ export default async function PortalItemPage({
   params: Promise<{ token: string; itemId: string }>;
 }) {
   const { token, itemId } = await params;
-  return <PortalUpload token={token} itemId={itemId} />;
+  return <PortalUpload key={`${token}:${itemId}`} token={token} itemId={itemId} />;
 }
