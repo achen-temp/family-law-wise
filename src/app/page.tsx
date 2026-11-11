@@ -6,10 +6,11 @@ export default function Home() {
       <div className="card w-full max-w-md p-6 text-center sm:p-8">
         <p className="text-sm font-semibold text-brand">Family Law Wise</p>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight">Financial disclosure, together</h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted">Explore the attorney workspace. Clients enter through a demo invitation prepared from their matter.</p>
+        <p className="mt-3 text-sm leading-relaxed text-muted">Explore the attorney workspace or return to your client matter. First-time clients enter through their invitation link.</p>
         <Link href="/sign-in" className="btn btn-primary mt-6 min-h-11 w-full">
-          Attorney demo sign-in
+          Attorney sign-in
         </Link>
+        <Link href="/client/sign-in" className="btn mt-3 min-h-11 w-full">Client sign-in</Link>
         <p className="mt-6 text-xs leading-relaxed text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
       </div>
     </main>

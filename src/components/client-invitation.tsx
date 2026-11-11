@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui";
 import { clientParty, matterTitle, personName } from "@/lib/format";
 import { useStore } from "@/lib/store";
+import { demoCodeError } from "@/lib/client-entry";
 
 export function ClientInvitation({ token }: { token: string }) {
   const { state } = useStore();
@@ -33,13 +34,7 @@ export function ClientInvitation({ token }: { token: string }) {
 
   function verify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const issue = !/^\d{6}$/.test(code)
-      ? "Enter a six-digit demo code."
-      : expired
-        ? "This demo code has expired. Reset the demo code to continue."
-        : code !== "123456"
-          ? "That demo code does not match. Use the sample code 123456."
-          : "";
+    const issue = demoCodeError(code, expired);
     if (issue) {
       setError(issue);
       codeRef.current?.focus();

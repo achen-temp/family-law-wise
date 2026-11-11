@@ -6,6 +6,7 @@ import "./entry.css";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui";
+import { EntryRoleNav } from "@/components/entry-role-nav";
 
 export function AttorneySignIn() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export function AttorneySignIn() {
       </aside>
       <div className="entry-taskSide">
         <section className="entry-task" aria-labelledby="entry-title">
+          <EntryRoleNav role="attorney" />
           <p className="entry-contextLabel">Demo workspace</p>
           <h1 id="entry-title" className="entry-taskTitle">Attorney sign-in</h1>
           <p className="entry-taskCopy">Enter an email address to open the sample attorney workspace.</p>
