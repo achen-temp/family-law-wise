@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Dialog, Field } from "@/components/ui";
+import { Button, Dialog, Field, StatusPill } from "@/components/ui";
+import { REQUIREMENT_LABEL } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import type { Requirement } from "@/lib/types";
 
@@ -70,7 +71,7 @@ export function RequestDialog({
                 />
                 <span>
                   <span className="block font-medium">{item.groupLabel ? `${item.groupLabel} · ` : ""}{item.title}</span>
-                  <span className="text-xs text-muted">{item.status === "NOT_AVAILABLE" ? "Client says unavailable" : "Missing"}</span>
+                  <StatusPill status={item.status} label={item.status === "NOT_AVAILABLE" ? "Client says unavailable" : REQUIREMENT_LABEL[item.status]} />
                 </span>
               </label>
             </li>

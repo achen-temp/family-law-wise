@@ -58,7 +58,7 @@ export function Choice({
 }
 
 const REQUIREMENT_TONE: Record<RequirementStatus, string> = {
-  MISSING: "bg-neutral-bg text-neutral-text",
+  MISSING: "bg-error-bg text-error-text",
   REQUESTED: "bg-review-bg text-review-text",
   UPLOADED: "bg-review-bg text-review-text",
   NEEDS_REVIEW: "bg-review-bg text-review-text",
