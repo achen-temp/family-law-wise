@@ -103,6 +103,11 @@
   .bg-sidebar {
     --focus-ring: var(--rail-indicator);
   }
+
+  .bg-sidebar .bg-white:focus-visible {
+    outline-color: var(--focus);
+    outline-offset: -3px;
+  }
 }
 
 html {
