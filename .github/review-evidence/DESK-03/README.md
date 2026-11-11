@@ -25,19 +25,21 @@ Authentic before captures were taken on unmodified base `b31143451826e0aa2de7d1a
 | Attorney, compact desktop | [Before](before-attorney-empty-1280.png) | [After](after-attorney-empty-1280.png) |
 | Invitation code, compact desktop | [Before](before-invitation-code-1280.png) | [After](after-invitation-code-1280.png) |
 
-The forms now use centered 440px white sheets on the warm-gray canvas, 28px titles, 40px fields and 36px primary actions. Invitation context is an aligned list. Adjacent help/error space keeps the primary action in place when validation changes. Simulation controls are secondary; invalid-link copy gives client recovery guidance and labels attorney walkthrough links as demo-only. At 1280×720 the longer invitation scrolls naturally; the primary action remains visible and the return link remains reachable.
+The attorney entry now uses a two-column desktop composition: the existing W brand and a serif financial-disclosure heading over an original folder-and-paper still life on the left; a focused 440px task column on the right. The primary action is 44px tall. QA simulation is inside an optional “Demo controls” disclosure with keyboard opening and Escape-to-close focus recovery. Below 900px the decorative introduction is omitted so the form follows the brand immediately.
+
+The invitation uses the same split, with the actual shared-store firm, matter and recipient on the left and the code/request/error/recovery task on the right. Missing invitations have specific recovery guidance. Nothing adds authentication or email delivery.
+
+The earlier PR revision is preserved in immutable commit `b71645b43f28ba0db016ff883aeec32a2bec1a51`: its `after-*.png` files are the last-reviewed comparison. Before these edits, a fresh 12-state browser capture of that clean revision matched those committed PNGs byte for byte. Duplicate captures were discarded; the original baseline images remain unchanged. The current `after-*.png` files show the revised source.
 
 ## Verification
 
 - `npm test`: 43 passed.
-- `npm run lint`: passed.
-- `npm run build`: passed; existing remote Google Fonts require build network access.
-- `git diff --check`: passed.
-- Chromium interactions passed: empty/malformed email, simulated failure, correction and Enter-key navigation to `/overview`; keyboard code request, empty/short/nonnumeric/wrong code, expiry even with the correct code, reset clears error/value and focuses the field, `123456` enters the matching John and Sarah portals; invalid link recovery returns to matters.
-- Runtime measurements: sheet 440px, input 40px, primary 36px; primary Y position unchanged across every validation state in each form.
-- No horizontal overflow at 1280×720, 1280×800, 1440×900 or 1920×1080. Focus outlines and scroll access to final return links checked.
-- 200% CSS zoom resilience checked; native browser zoom, Safari and Firefox were not exercised.
-- No browser page errors in before/after or functional checks.
-- An independent reviewer inspected the actual desktop forms and exercised entry, validation, expiry/reset and invalid-link paths; no concrete blocker found.
+- `npm run lint`, `npm run build`, `git diff --check`: passed.
+- Chromium interactions: empty/malformed email, simulated failure, correction and Enter-key navigation to `/overview`; keyboard Demo controls opening, Escape closes and returns focus; keyboard code request, empty/short/nonnumeric/wrong code, expiry blocks even the correct code, reset clears error/value and focuses the field, `123456` enters the matching John and Sarah portals; invalid-link recovery returns to matters.
+- Runtime measurements: 440px task column, 40px input, 44px primary; adjacent errors retain the action position within the same disclosure state.
+- No horizontal overflow at 1280×720, 1280×800, 1440×900, 1920×1080, 320×740, 375×812, 414×896 or 768×1024. Focus outlines and final return-link access checked.
+- 200% CSS zoom resilience checked; native browser zoom, Safari and Firefox were not exercised for this revision.
+- No browser page errors in the 12-state capture or functional sweep.
+- Independent reviewer inspected actual desktop screens and exercised attorney entry, client validation, expiry/reset and matching portal entry. Final compact sign-in text was simplified after the reviewer identified a contrast weakness over the photograph.
 
-Email and code entry remain existing demo exercises: any valid email format and sample code `123456` work. They do not authenticate an identity, send email or protect access. Real sessions, invitation validity and email delivery remain backend dependencies.
+Email and code entry remain existing demo exercises: any valid email format and sample code `123456` work. They do not authenticate identity, send email or protect access. Real sessions, invitation validity and email delivery remain backend dependencies.

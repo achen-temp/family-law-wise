@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import "./entry.css";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui";
@@ -22,16 +24,24 @@ export function AttorneySignIn() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col justify-center bg-canvas px-6 py-8">
-      <div className="mx-auto w-full max-w-[440px]">
-        <Link href="/" className="inline-flex min-h-9 items-center text-sm font-semibold text-brand">Family Law Wise</Link>
-        <section className="card mt-4 p-8">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted">Attorney workspace</p>
-          <h1 className="mt-2 text-[28px] leading-9 font-semibold tracking-tight">Demo sign-in</h1>
-          <p className="mt-3 text-sm leading-[21px] text-muted">Enter an email address to explore the sample attorney workspace. No account is created or verified.</p>
-          <form className="mt-6" onSubmit={submit} noValidate>
+    <main className="entry-entry">
+      <aside className="entry-orientation entry-attorneyOrientation" aria-label="Family Law Wise">
+        <Link href="/" className="entry-wordmark"><span className="entry-brandMark" aria-hidden="true">W</span>Family Law Wise</Link>
+        <div className="entry-attorneyIntro">
+          <h2 className="entry-editorialTitle">Financial disclosure</h2>
+        </div>
+        <div className="entry-photograph">
+          <Image src="/entry-still-life.webp" alt="" fill sizes="(min-width: 900px) 50vw, 100vw" priority className="object-cover" />
+        </div>
+      </aside>
+      <div className="entry-taskSide">
+        <section className="entry-task" aria-labelledby="entry-title">
+          <p className="entry-contextLabel">Demo workspace</p>
+          <h1 id="entry-title" className="entry-taskTitle">Attorney sign-in</h1>
+          <p className="entry-taskCopy">Enter an email address to open the sample attorney workspace.</p>
+          <form className="entry-form" onSubmit={submit} noValidate>
             <div>
-              <label htmlFor="attorney-email" className="mb-1.5 block text-sm font-medium">Work email</label>
+              <label htmlFor="attorney-email" className="entry-label">Work email</label>
               <input
                 ref={emailRef}
                 id="attorney-email"
@@ -43,21 +53,29 @@ export function AttorneySignIn() {
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? "sign-in-error" : "sign-in-hint"}
               />
-              <div className="mt-1.5 min-h-[42px] text-xs leading-[18px]">
+              <div className="entry-fieldHelp">
                 {error ? <p id="sign-in-error" role="alert" className="text-error-text">{error}</p> : <p id="sign-in-hint" className="text-muted">Any valid email format works in this demo.</p>}
               </div>
             </div>
-            <Button type="submit" variant="primary" className="w-full">Enter attorney demo</Button>
-            <Button type="button" variant="ghost" className="mt-2 w-full" onClick={() => {
-              setError("Simulated sign-in error. No authentication was attempted. Try entering the demo again.");
-              emailRef.current?.focus();
-            }}>Simulate sign-in error</Button>
+            <Button type="submit" variant="primary" className="entry-primary">Enter attorney demo<span aria-hidden="true">→</span></Button>
+            <details className="entry-demoControls" onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector("summary")?.focus();
+              }
+            }}>
+              <summary>Demo controls</summary>
+              <Button type="button" variant="ghost" className="entry-simulation" onClick={() => {
+                setError("Simulated sign-in error. No authentication was attempted. Try entering the demo again.");
+                emailRef.current?.focus();
+              }}>Simulate sign-in error</Button>
+            </details>
           </form>
-          <div className="mt-5 border-t border-line pt-4">
-            <Link href="/" className="inline-flex min-h-9 items-center text-sm font-medium text-brand">Back to welcome</Link>
+          <div className="entry-returnLink">
+            <Link href="/">Back to welcome</Link>
           </div>
         </section>
-        <p className="mt-4 text-xs leading-[18px] text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
+        <p className="entry-disclosure">Demo only. No account is created or verified, and no email is sent. Changes reset on refresh.</p>
       </div>
     </main>
   );
