@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 import {
   Check,
   Circle,
+  ChevronDown,
   ClipboardList,
   Home,
   Inbox,
@@ -14,9 +15,10 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { CHECKLIST_SECTIONS, INTAKE_STEPS } from "@/lib/content";
-import { cn, initials, personName, clientParty } from "@/lib/format";
+import { cn, initials, personName, clientParty, matterTitle } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
+import { DemoViewSwitcher } from "@/components/demo-view-switcher";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
 import { clientRequests } from "@/lib/document-selectors";
 
@@ -53,16 +55,24 @@ export function PortalShell({ token, children }: { token: string; children: Reac
   ).length;
   const questionnaireOpen = INTAKE_STEPS.filter((step) => !intake.completed.includes(step.id)).length;
 
+  const chapter = INTAKE_STEPS.find((step) => pathname === `/portal/${token}/intake/${step.id}`);
+  const pageLabel = chapter?.label ?? (pathname.includes("/intake") ? "Questionnaire" : pathname.includes("/checklist") ? "Checklist" : pathname.includes("/requests") ? "Requests" : pathname.includes("/messages") ? "Messages" : pathname.includes("/documents") ? "Submitted files" : "Home");
+
   const nav = (
-    <div className="flex h-full flex-col bg-sidebar">
-      <Link href={`/portal/${token}`} className="flex items-center gap-2.5 bg-white px-4 py-4 text-foreground">
-        <span className="grid size-9 place-items-center rounded-xl bg-brand text-sm font-semibold text-white">W</span>
-        <span>
-          <span className="block text-[15px] font-semibold leading-none">Family Law Wise</span>
-          <span className="mt-1 block text-[11px] text-muted">{state.firm.name}</span>
+    <div className="flex h-full flex-col bg-sidebar text-rail-text">
+      <Link href={`/portal/${token}`} className="flex h-[72px] shrink-0 items-center gap-2.5 px-4 text-rail-text">
+        <span className="grid size-8 shrink-0 place-items-center rounded-md bg-rail-selected text-sm font-semibold">W</span>
+        <span className="min-w-0">
+          <span className="block text-[13px] font-semibold leading-5 tracking-tight">Family Law Wise</span>
+          <span className="block truncate text-[11px] text-rail-muted" title={state.firm.name}>{state.firm.name}</span>
         </span>
       </Link>
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-4 pt-3">
+      <div className="shrink-0 border-y border-rail-hover px-5 py-3">
+        <p className="text-[11px] text-rail-muted">Your matter</p>
+        <p className="mt-1 line-clamp-3 break-words text-[13px] font-semibold leading-5" title={matterTitle(matter)}>{matterTitle(matter)}</p>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-3">
+      <nav aria-label="Client navigation" className="space-y-0.5">
         <NavLink href={`/portal/${token}`} active={pathname === `/portal/${token}`} icon={Home}>
           Home
         </NavLink>
@@ -91,60 +101,64 @@ export function PortalShell({ token, children }: { token: string; children: Reac
           Requests
         </NavLink>
         <NavLink href={`/portal/${token}/messages`} active={pathname.startsWith(`/portal/${token}/messages`)} icon={MessageSquare} badge={unreadCount(state, "CLIENT", token)}>Messages</NavLink>
-        <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Sections</p>
         <NavLink href={`/portal/${token}/documents`} active={pathname.startsWith(`/portal/${token}/documents`)} icon={ClipboardList}>Submitted files</NavLink>
-        {INTAKE_STEPS.map((step) => {
-          const href = `/portal/${token}/intake/${step.id}`;
-          const done = intake.completed.includes(step.id);
-          return (
-            <Link
-              key={step.id}
-              href={href}
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm text-white",
-                pathname === href ? "bg-white/20 font-semibold" : "hover:bg-white/10",
-              )}
-            >
-              {done ? <Check className="size-3.5 text-emerald-300" /> : <Circle className="size-3.5 text-white/50" />}
-              <span className="truncate">{step.label}</span>
-            </Link>
-          );
-        })}
       </nav>
-      <div className="p-3">
-        <div className="mb-3"><WiseAi role="CLIENT" matterId={token} /></div>
-        <div className="rounded-xl bg-white p-3 text-foreground shadow-sm">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
-              {initials(client)}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold">{client}</span>
-              <span className="block truncate text-xs text-muted">Client</span>
-            </span>
-          </div>
+      <details open={pathname.includes("/intake/")} className="group mt-4 border-t border-rail-hover pt-2">
+        <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-xs font-medium text-rail-muted hover:bg-rail-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rail-indicator [&::-webkit-details-marker]:hidden">
+          Questionnaire sections
+          <ChevronDown aria-hidden="true" className="size-3.5 shrink-0 group-open:rotate-180" />
+        </summary>
+        <nav aria-label="Questionnaire sections" className="mt-1 space-y-0.5">
+          {INTAKE_STEPS.map((step) => {
+            const href = `/portal/${token}/intake/${step.id}`;
+            const done = intake.completed.includes(step.id);
+            const dirty = state.intakeDirtySections?.[token]?.includes(step.id);
+            return (
+              <Link key={step.id} href={href} aria-current={pathname === href ? "page" : undefined} className={cn("flex min-h-8 items-center gap-2 rounded-md border-l-[3px] px-3 py-1.5 text-xs leading-5", pathname === href ? "border-rail-indicator bg-rail-selected font-semibold" : "border-transparent text-rail-muted hover:bg-rail-hover")}>
+                {done && !dirty ? <Check aria-hidden="true" className="size-3.5 shrink-0" /> : <Circle aria-hidden="true" className="size-3.5 shrink-0" />}
+                <span className="min-w-0 flex-1 break-words">{step.label}</span>
+                {dirty ? <span className="text-[10px]">Draft</span> : <span className="sr-only">{done ? "Confirmed" : "Not started"}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+      </details>
+      </div>
+      <div className="shrink-0 space-y-2 border-t border-rail-hover p-3">
+        <WiseAi role="CLIENT" matterId={token} />
+        <div className="flex min-h-12 items-center gap-2.5 px-2">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-rail-selected text-xs font-semibold">{initials(client)}</span>
+          <span className="min-w-0">
+            <span className="block truncate text-[13px] font-medium" title={client}>{client}</span>
+            <span className="block text-[11px] text-rail-muted">Client</span>
+          </span>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-white">
-      <aside className="fixed inset-y-0 left-0 hidden w-[240px] md:block">{nav}</aside>
+    <div className="min-h-screen bg-canvas">
+      <aside aria-label="Client sidebar" className="fixed inset-y-0 left-0 z-20 hidden w-56 md:block">{nav}</aside>
       {open ? (
         <div className="fixed inset-0 z-40 md:hidden">
-          <button className="absolute inset-0 bg-[#0f172a]/40" aria-label="Close menu" onClick={() => setOpen(false)} />
-          <aside className="relative h-full w-[240px]">{nav}</aside>
+          <button className="absolute inset-0 bg-[#20292759]" aria-label="Close menu" onClick={() => setOpen(false)} />
+          <aside className="relative h-full w-56">{nav}</aside>
         </div>
       ) : null}
-      <div className="md:pl-[240px]">
-        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-white px-4 py-3 md:hidden">
-          <button type="button" className="btn btn-secondary h-9 px-2.5" onClick={() => setOpen(true)} aria-label="Open menu">
-            <Menu className="size-4" />
-          </button>
-          <span className="truncate text-sm font-medium">{client}</span>
-        </div>
-        <main className={cn("w-full px-4 py-6 md:px-8 md:py-8", !pathname.includes("/messages") && "max-w-6xl")}>{children}</main>
+      <div className="md:pl-56">
+        <header className="sticky top-0 z-10 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b border-line bg-surface px-4 py-2 md:flex md:h-14 md:gap-4 md:px-6 md:py-0 min-[90rem]:px-8 min-[120rem]:px-12">
+          <button type="button" className="btn btn-secondary h-8 px-2 md:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><Menu className="size-4" /></button>
+          <nav aria-label="Breadcrumb" className="min-w-0 flex-1 text-xs text-muted">
+            <ol className="flex min-w-0 items-center gap-2">
+              <li className="min-w-0 truncate" title={matterTitle(matter)}><Link href={`/portal/${token}`} className="hover:text-foreground">{matterTitle(matter)}</Link></li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" className="shrink-0 font-medium text-foreground" title={pageLabel}>{pageLabel}</li>
+            </ol>
+          </nav>
+          <DemoViewSwitcher role="Client" matter={matter} />
+        </header>
+        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{children}</main>
       </div>
     </div>
   );
@@ -166,15 +180,16 @@ function NavLink({
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white",
-        active ? "bg-white/20 font-semibold" : "hover:bg-white/10",
+        "flex min-h-9 items-center gap-2.5 rounded-md border-l-[3px] px-3 py-2 text-[13px] leading-5 text-rail-text",
+        active ? "border-rail-indicator bg-rail-selected font-semibold" : "border-transparent font-medium hover:bg-rail-hover",
       )}
     >
       <Icon className="size-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">{children}</span>
       {badge ? (
-        <span className="grid min-h-5 min-w-5 place-items-center rounded-full bg-emerald-400 px-1.5 text-[11px] font-semibold leading-none text-white">
+        <span className="grid min-h-[18px] min-w-[18px] shrink-0 place-items-center rounded bg-rail-hover px-1 text-[11px] font-semibold leading-none text-rail-text">
           {badge}
         </span>
       ) : null}
