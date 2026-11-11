@@ -20,6 +20,7 @@ import { Button, PageHeader, StackedBar, StatusPill } from "@/components/ui";
 import { OVERVIEW_ROWS } from "@/lib/content";
 import {
   MATTER_LABEL,
+  REQUIREMENT_LABEL,
   clientParty,
   formatDate,
   matterTitle,
@@ -131,13 +132,7 @@ export function MatterOverview({ matterId }: { matterId: string }) {
                       <span className="block text-sm">{item.groupLabel ? `${item.groupLabel}` : item.title}</span>
                       <span className="text-xs text-muted">
                         {item.groupLabel ? `${item.title} · ` : ""}
-                        {item.status === "NEEDS_REVIEW"
-                          ? "Needs review"
-                          : item.status === "NOT_AVAILABLE"
-                            ? "Client says unavailable"
-                            : item.status === "REQUESTED"
-                              ? "Requested"
-                              : "Missing"}
+                        <StatusPill status={item.status} label={item.status === "NOT_AVAILABLE" ? "Client says unavailable" : REQUIREMENT_LABEL[item.status]} />
                       </span>
                     </Link>
                   </li>

@@ -2,18 +2,73 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a2332;
-  --card: #ffffff;
-  --sidebar: #2f6fed;
-  --muted: #667085;
-  --line: #e6e8ee;
-  --brand: #2f6fed;
-  --brand-soft: #e8f1ff;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --canvas: #f4f3ef;
+  --surface: #ffffff;
+  --surface-subtle: #f8f8f5;
+  --rail: #202927;
+  --rail-hover: #2a3632;
+  --rail-text: #eff3ef;
+  --rail-muted: #bbc7bf;
+  --rail-selected: #34483e;
+  --rail-indicator: #b9d4c4;
+  --text-primary: #232d29;
+  --text-secondary: #5e6a63;
+  --border: #dde1da;
+  --border-strong: #87958a;
+  --primary: #245b4a;
+  --primary-hover: #194536;
+  --primary-soft: #eaf2ec;
+  --review-text: #775418;
+  --review-bg: #faf0d9;
+  --success-text: var(--primary);
+  --success-bg: var(--primary-soft);
+  --error-text: #9d3c35;
+  --error-bg: #fbedea;
+  --neutral-text: #57655c;
+  --neutral-bg: #eef0eb;
+  --focus: var(--primary);
+  --focus-ring: var(--focus);
+  --shadow-popover: 0 8px 24px #2029271f;
+  --shadow-dialog: 0 16px 48px #20292729;
+
+  /* Existing page and control contracts share the desktop semantic tokens. */
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --sidebar: var(--rail);
+  --muted: var(--text-secondary);
+  --line: var(--border);
+  --brand: var(--primary);
+  --brand-soft: var(--primary-soft);
+  --shadow: none;
 }
 
 @theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-rail: var(--rail);
+  --color-rail-hover: var(--rail-hover);
+  --color-rail-text: var(--rail-text);
+  --color-rail-muted: var(--rail-muted);
+  --color-rail-selected: var(--rail-selected);
+  --color-rail-indicator: var(--rail-indicator);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-review-text: var(--review-text);
+  --color-review-bg: var(--review-bg);
+  --color-success-text: var(--success-text);
+  --color-success-bg: var(--success-bg);
+  --color-error-text: var(--error-text);
+  --color-error-bg: var(--error-bg);
+  --color-neutral-text: var(--neutral-text);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-focus: var(--focus);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -39,6 +94,20 @@
   textarea {
     font: inherit;
   }
+
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .bg-sidebar {
+    --focus-ring: var(--rail-indicator);
+  }
+
+  .bg-sidebar .bg-white:focus-visible {
+    outline-color: var(--focus);
+    outline-offset: -3px;
+  }
 }
 
 html {
@@ -49,105 +118,151 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background: #d6e4ff;
+  background: var(--primary-soft);
+  color: var(--text-primary);
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  height: 2.25rem;
-  padding: 0 0.9rem;
-  border-radius: 0.65rem;
-  border: 1px solid transparent;
-  font-size: 0.875rem;
-  font-weight: 550;
-  line-height: 1;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+
+  .btn:disabled {
+    background: var(--neutral-bg);
+    border-color: var(--line);
+    color: var(--neutral-text);
+    cursor: not-allowed;
+  }
+
+  .btn:focus-visible,
+  .field:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .btn-primary {
+    background: var(--brand);
+    color: white;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--foreground);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--surface-subtle);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--neutral-bg);
+    color: var(--foreground);
+  }
+
+  .btn-danger {
+    background: var(--surface);
+    border-color: var(--error-text);
+    color: var(--error-text);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: var(--error-bg);
+  }
+
+  .field {
+    width: 100%;
+    min-width: 0;
+    height: 2.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--foreground);
+  }
+
+  textarea.field {
+    height: auto;
+    padding: 0.5rem 0.75rem;
+    resize: vertical;
+  }
+
+  .field::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+
+  .field:hover:not(:disabled) {
+    border-color: var(--primary);
+  }
+
+  .field:focus {
+    border-color: var(--focus);
+  }
+
+  .field[aria-invalid="true"] {
+    border-color: var(--error-text);
+    background: var(--error-bg);
+  }
+
+  .field[data-state="success"] {
+    border-color: var(--success-text);
+    background: var(--success-bg);
+  }
+
+  .field:disabled {
+    background: var(--neutral-bg);
+    color: var(--neutral-text);
+    cursor: not-allowed;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+  }
+
 }
 
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 
-.btn:focus-visible,
-.field:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.22);
-}
-
-.btn-primary {
-  background: var(--brand);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #245ad6;
-}
-
-.btn-secondary {
-  background: white;
-  border-color: var(--line);
-  color: var(--foreground);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #f5f8ff;
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--muted);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: #f3f6fb;
-  color: var(--foreground);
-}
-
-.btn-danger {
-  background: white;
-  border-color: #f0d4d4;
-  color: #b42318;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #fef6f6;
-}
-
-.field {
-  width: 100%;
-  height: 2.5rem;
-  border-radius: 0.65rem;
-  border: 1px solid var(--line);
-  background: white;
-  padding: 0 0.75rem;
-  font-size: 0.875rem;
-  color: var(--foreground);
-  outline: none;
-}
-
-textarea.field {
-  height: auto;
-  padding: 0.65rem 0.75rem;
-  resize: vertical;
-}
-
-.field:focus {
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.16);
-}
-
-.card {
-  border: 1px solid var(--line);
-  background: var(--card);
-  border-radius: 0.85rem;
-  box-shadow: var(--shadow);
+  @layer components {
+    .btn {
+      transition: none;
+    }
+  }
 }
