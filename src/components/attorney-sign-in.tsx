@@ -22,38 +22,42 @@ export function AttorneySignIn() {
   }
 
   return (
-    <main className="min-h-screen bg-brand-soft px-5 py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-md">
-        <Link href="/" className="text-sm font-semibold text-brand">Family Law Wise</Link>
-        <section className="card mt-6 p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand">Attorney workspace</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Demo sign-in</h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted">Enter an email address to explore the sample attorney workspace. No account is created or verified.</p>
-          <form className="mt-6 space-y-4" onSubmit={submit} noValidate>
+    <main className="flex min-h-screen flex-col justify-center bg-canvas px-6 py-8">
+      <div className="mx-auto w-full max-w-[440px]">
+        <Link href="/" className="inline-flex min-h-9 items-center text-sm font-semibold text-brand">Family Law Wise</Link>
+        <section className="card mt-4 p-8">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">Attorney workspace</p>
+          <h1 className="mt-2 text-[28px] leading-9 font-semibold tracking-tight">Demo sign-in</h1>
+          <p className="mt-3 text-sm leading-[21px] text-muted">Enter an email address to explore the sample attorney workspace. No account is created or verified.</p>
+          <form className="mt-6" onSubmit={submit} noValidate>
             <div>
               <label htmlFor="attorney-email" className="mb-1.5 block text-sm font-medium">Work email</label>
               <input
                 ref={emailRef}
                 id="attorney-email"
-                className="field min-h-11"
+                className="field"
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(event) => { setEmail(event.target.value); setError(""); }}
                 aria-invalid={Boolean(error)}
-                aria-describedby={error ? "sign-in-error" : undefined}
+                aria-describedby={error ? "sign-in-error" : "sign-in-hint"}
               />
-              {error ? <p id="sign-in-error" role="alert" className="mt-2 text-sm text-rose-800">{error}</p> : null}
+              <div className="mt-1.5 min-h-[42px] text-xs leading-[18px]">
+                {error ? <p id="sign-in-error" role="alert" className="text-error-text">{error}</p> : <p id="sign-in-hint" className="text-muted">Any valid email format works in this demo.</p>}
+              </div>
             </div>
-            <Button type="submit" variant="primary" className="min-h-11 w-full">Enter attorney demo</Button>
-            <Button type="button" className="min-h-11 w-full" onClick={() => {
+            <Button type="submit" variant="primary" className="w-full">Enter attorney demo</Button>
+            <Button type="button" variant="ghost" className="mt-2 w-full" onClick={() => {
               setError("Simulated sign-in error. No authentication was attempted. Try entering the demo again.");
               emailRef.current?.focus();
             }}>Simulate sign-in error</Button>
           </form>
-          <Link href="/" className="mt-5 inline-flex min-h-11 items-center text-sm font-medium text-brand">Back to welcome</Link>
+          <div className="mt-5 border-t border-line pt-4">
+            <Link href="/" className="inline-flex min-h-9 items-center text-sm font-medium text-brand">Back to welcome</Link>
+          </div>
         </section>
-        <p className="mt-5 text-sm leading-relaxed text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
+        <p className="mt-4 text-xs leading-[18px] text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
       </div>
     </main>
   );

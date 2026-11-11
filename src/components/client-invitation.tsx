@@ -48,31 +48,31 @@ export function ClientInvitation({ token }: { token: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-brand-soft px-5 py-10 sm:py-16">
-      <div className="mx-auto w-full max-w-md">
-        <Link href="/" className="text-sm font-semibold text-brand">Family Law Wise</Link>
-        <section className="card mt-6 p-6 sm:p-8">
-          <p className="text-xs font-semibold uppercase tracking-wider text-brand">Client invitation demo</p>
+    <main className="flex min-h-screen flex-col justify-center bg-canvas px-6 py-8">
+      <div className="mx-auto w-full max-w-[440px]">
+        <Link href="/" className="inline-flex min-h-9 items-center text-sm font-semibold text-brand">Family Law Wise</Link>
+        <section className="card mt-4 p-8">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">Client invitation demo</p>
           {matter ? (
             <>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight">You’re invited</h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted">Review the sample invitation, then use a demo code to enter this matter.</p>
-              <dl className="mt-5 space-y-3 rounded-xl border border-line bg-brand-soft/40 p-4 text-sm">
-                <div><dt className="text-xs text-muted">Invited client</dt><dd className="mt-1 font-medium">{personName(clientParty(matter))}</dd><dd className="break-all text-muted">{clientParty(matter)?.email || "No email on file"}</dd></div>
-                <div><dt className="text-xs text-muted">Law firm</dt><dd className="mt-1 font-medium">{state.firm.name}</dd></div>
-                <div><dt className="text-xs text-muted">Matter</dt><dd className="mt-1 break-words font-medium">{matterTitle(matter)}</dd></div>
+              <h1 className="mt-2 text-[28px] leading-9 font-semibold tracking-tight">You’re invited</h1>
+              <p className="mt-3 text-sm leading-[21px] text-muted">Review the sample invitation, then use a demo code to enter this matter.</p>
+              <dl className="mt-5 divide-y divide-line border-y border-line text-sm leading-[21px]">
+                <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 py-3"><dt className="text-xs leading-[21px] text-muted">Law firm</dt><dd className="break-words font-medium">{state.firm.name}</dd></div>
+                <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 py-3"><dt className="text-xs leading-[21px] text-muted">Matter</dt><dd className="break-words font-medium">{matterTitle(matter)}</dd></div>
+                <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3 py-3"><dt className="text-xs leading-[21px] text-muted">Invited client</dt><dd><span className="block break-words font-medium">{personName(clientParty(matter))}</span><span className="block break-all text-xs leading-[18px] text-muted">{clientParty(matter)?.email || "No email on file"}</span></dd></div>
               </dl>
-              <p id="demo-code-hint" className="mt-5 text-sm leading-relaxed text-muted">Sample code: <strong className="font-mono text-foreground">123456</strong>. This is a simulated check, and does not protect access to the demo.</p>
+              <p id="demo-code-hint" className="mt-5 text-xs leading-[18px] text-muted">Sample code: <strong className="font-mono text-foreground">123456</strong>. This is a simulated check, and does not protect access to the demo.</p>
               {!requested ? (
-                <Button variant="primary" className="mt-5 min-h-11 w-full" onClick={resetCode}>Request demo code</Button>
+                <Button variant="primary" className="mt-5 w-full" onClick={resetCode}>Request demo code</Button>
               ) : (
-                <form className="mt-5 space-y-4" onSubmit={verify} noValidate>
+                <form className="mt-5" onSubmit={verify} noValidate>
                   <div>
                     <label htmlFor="invitation-code" className="mb-1.5 block text-sm font-medium">Six-digit demo code</label>
                     <input
                       ref={codeRef}
                       id="invitation-code"
-                      className="field min-h-11 font-mono tracking-widest"
+                      className="field font-mono tracking-widest"
                       type="text"
                       inputMode="numeric"
                       autoComplete="one-time-code"
@@ -82,12 +82,14 @@ export function ClientInvitation({ token }: { token: string }) {
                       aria-invalid={Boolean(error)}
                       aria-describedby={`demo-code-hint${error ? " invitation-code-error" : ""}`}
                     />
-                    {error ? <p id="invitation-code-error" role="alert" className="mt-2 text-sm text-rose-800">{error}</p> : null}
+                    <div className="mt-1.5 min-h-[42px] text-xs leading-[18px]">
+                      {error ? <p id="invitation-code-error" role="alert" className="text-error-text">{error}</p> : <p className="text-muted">Enter the sample code above to continue.</p>}
+                    </div>
                   </div>
-                  <Button type="submit" variant="primary" className="min-h-11 w-full">Enter client demo</Button>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button type="button" className="min-h-11 flex-1" onClick={resetCode}>Reset demo code</Button>
-                    <Button type="button" className="min-h-11 flex-1" onClick={() => {
+                  <Button type="submit" variant="primary" className="w-full">Enter client demo</Button>
+                  <div className="mt-2 flex flex-wrap justify-between gap-x-2">
+                    <Button type="button" variant="ghost" className="px-0" onClick={resetCode}>Reset demo code</Button>
+                    <Button type="button" variant="ghost" className="px-0" onClick={() => {
                       setExpired(true);
                       setError("This demo code has expired. Reset the demo code to continue.");
                       setMessage("");
@@ -96,18 +98,20 @@ export function ClientInvitation({ token }: { token: string }) {
                   </div>
                 </form>
               )}
-              <p role="status" className="mt-3 text-sm leading-relaxed text-brand">{message}</p>
-              <Link href={`/matters/${encodeURIComponent(token)}`} className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-brand">Back to attorney matter</Link>
+              <p role="status" className="mt-3 min-h-[18px] text-xs leading-[18px] text-brand">{message}</p>
+              <div className="mt-4 border-t border-line pt-3">
+                <Link href={`/matters/${encodeURIComponent(token)}`} className="inline-flex min-h-9 items-center text-sm font-medium text-brand">Demo: back to attorney matter</Link>
+              </div>
             </>
           ) : (
             <>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight">Invitation not found</h1>
-              <p className="mt-3 text-sm leading-relaxed text-muted">This link does not match a matter in the current demo. A newly created matter resets on refresh. Return to the attorney workspace to prepare another invitation.</p>
-              <Link href="/matters" className="btn btn-primary mt-5 min-h-11 w-full">Back to matters</Link>
+              <h1 className="mt-2 text-[28px] leading-9 font-semibold tracking-tight">Invitation not found</h1>
+              <p className="mt-3 text-sm leading-[21px] text-muted">This link does not match a matter in the current demo. Open your original invitation, or ask your law firm for a fresh link. Newly created demo matters reset on refresh.</p>
+              <Link href="/matters" className="btn btn-primary mt-6 w-full">Demo: back to matters</Link>
             </>
           )}
         </section>
-        <p className="mt-5 text-sm leading-relaxed text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
+        <p className="mt-4 text-xs leading-[18px] text-muted">Demo only. No real sign-in or email delivery. Changes reset on refresh.</p>
       </div>
     </main>
   );
