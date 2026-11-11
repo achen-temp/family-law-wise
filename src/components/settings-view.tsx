@@ -14,15 +14,16 @@ export function SettingsView() {
   const [scheduleSaved, setScheduleSaved] = useState(false);
 
   return (
-    <div>
+    <div className="max-w-[760px]">
       <PageHeader
         eyebrow="Firm"
         title="Settings"
-        description="Edit firm details and the preview reminder schedule. Changes last for this preview session; no reminders or emails are sent."
+        description="Manage firm details and reminder defaults. Changes last for this preview session; refresh resets them. No reminders or emails are sent."
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="overflow-hidden rounded-lg border border-line bg-surface">
         <form
-          className="card space-y-4 p-5"
+          className="space-y-4 p-6"
+          aria-labelledby="firm-heading"
           noValidate
           onChange={() => { setFirmError(""); setFirmSaved(false); }}
           onSubmit={(event) => {
@@ -46,26 +47,34 @@ export function SettingsView() {
             setFirmSaved(true);
           }}
         >
-          <h2 className="text-sm font-semibold">Firm</h2>
+          <div>
+            <h2 id="firm-heading" className="text-base font-semibold leading-6">Firm</h2>
+            <p className="mt-1 text-xs leading-[18px] text-muted">Firm and attorney contact details used in this preview.</p>
+          </div>
           <Field label="Firm name">
             <input className="field" name="name" required defaultValue={firm.name} aria-describedby={firmError ? "firm-error" : undefined} />
           </Field>
-          <Field label="Attorney name">
-            <input className="field" name="attorneyName" required defaultValue={firm.attorneyName} aria-describedby={firmError ? "firm-error" : undefined} />
-          </Field>
-          <Field label="Attorney email">
-            <input className="field" name="attorneyEmail" type="email" required defaultValue={firm.attorneyEmail} aria-describedby={firmError ? "firm-error" : undefined} />
-          </Field>
-          {firmError ? <p id="firm-error" role="alert" className="text-sm text-rose-800">{firmError}</p> : null}
-          {firmSaved ? <p role="status" className="text-sm text-emerald-800">Saved for this preview session. Refresh resets changes.</p> : null}
-          <div className="flex justify-end">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Attorney name">
+              <input className="field" name="attorneyName" required defaultValue={firm.attorneyName} aria-describedby={firmError ? "firm-error" : undefined} />
+            </Field>
+            <Field label="Attorney email">
+              <input className="field" name="attorneyEmail" type="email" required defaultValue={firm.attorneyEmail} aria-describedby={firmError ? "firm-error" : undefined} />
+            </Field>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+            <div className="min-w-0 flex-1">
+              {firmError ? <p id="firm-error" role="alert" className="text-sm text-error-text">{firmError}</p> : null}
+              {firmSaved ? <p role="status" className="text-sm text-success-text">Firm details saved for this preview session. Refresh resets changes.</p> : null}
+            </div>
             <Button type="submit" variant="primary">
-              Save
+              Save firm details
             </Button>
           </div>
         </form>
         <form
-          className="card space-y-4 p-5"
+          className="space-y-4 border-t border-line p-6"
+          aria-labelledby="reminder-heading"
           noValidate
           onChange={() => { setScheduleError(""); setScheduleSaved(false); }}
           onSubmit={(event) => {
@@ -89,22 +98,28 @@ export function SettingsView() {
             setScheduleSaved(true);
           }}
         >
-          <h2 className="text-sm font-semibold">Reminder defaults</h2>
-          <p className="text-sm leading-relaxed text-muted">
-            Preview schedule only: set days after a request for the first reminder, second reminder, and attorney alert, in that order. No notifications are sent.
-          </p>
-          <Field label="First reminder (days after request)">
-            <input className="field" name="first" type="number" min={1} step={1} required defaultValue={firm.firstReminderDays} aria-describedby={scheduleError ? "schedule-error" : undefined} />
-          </Field>
-          <Field label="Second reminder (days)">
-            <input className="field" name="second" type="number" min={1} step={1} required defaultValue={firm.secondReminderDays} aria-describedby={scheduleError ? "schedule-error" : undefined} />
-          </Field>
-          <Field label="Attorney alert (days)">
-            <input className="field" name="alert" type="number" min={1} step={1} required defaultValue={firm.attorneyAlertDays} aria-describedby={scheduleError ? "schedule-error" : undefined} />
-          </Field>
-          {scheduleError ? <p id="schedule-error" role="alert" className="text-sm text-rose-800">{scheduleError}</p> : null}
-          {scheduleSaved ? <p role="status" className="text-sm text-emerald-800">Saved for this preview session. Refresh resets changes.</p> : null}
-          <div className="flex justify-end">
+          <div>
+            <h2 id="reminder-heading" className="text-base font-semibold leading-6">Reminder defaults</h2>
+            <p id="schedule-hint" className="mt-1 text-xs leading-[18px] text-muted">
+              All values are days after a request. Use positive whole numbers: first reminder, then second reminder, then attorney alert. Preview only; no notifications are sent.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="First reminder (days)">
+              <input className="field" name="first" type="number" min={1} step={1} required defaultValue={firm.firstReminderDays} aria-describedby={scheduleError ? "schedule-hint schedule-error" : "schedule-hint"} />
+            </Field>
+            <Field label="Second reminder (days)">
+              <input className="field" name="second" type="number" min={1} step={1} required defaultValue={firm.secondReminderDays} aria-describedby={scheduleError ? "schedule-hint schedule-error" : "schedule-hint"} />
+            </Field>
+            <Field label="Attorney alert (days)">
+              <input className="field" name="alert" type="number" min={1} step={1} required defaultValue={firm.attorneyAlertDays} aria-describedby={scheduleError ? "schedule-hint schedule-error" : "schedule-hint"} />
+            </Field>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+            <div className="min-w-0 flex-1">
+              {scheduleError ? <p id="schedule-error" role="alert" className="text-sm text-error-text">{scheduleError}</p> : null}
+              {scheduleSaved ? <p role="status" className="text-sm text-success-text">Reminder defaults saved for this preview session. Refresh resets changes.</p> : null}
+            </div>
             <Button type="submit" variant="primary">
               Save schedule
             </Button>

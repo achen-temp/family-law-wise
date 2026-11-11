@@ -1,0 +1,328 @@
+{
+  "before": [
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "firm-error",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "reminder-error",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "saved",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/templates",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "before",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/templates",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    }
+  ],
+  "after": [
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "firm-error",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "reminder-error",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "saved",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/templates",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/settings",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    },
+    {
+      "ticket": "DESK-04",
+      "phase": "after",
+      "baseline": "b31143451826e0aa2de7d1a98a91f9ec352d0f5c",
+      "role": "Attorney",
+      "route": "/templates",
+      "state": "default",
+      "record": "Fresh synthetic seed firm; invalid email / second reminder=1 only where labeled",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "zoom": 1,
+      "deviceScaleFactor": 1,
+      "scroll": {
+        "x": 0,
+        "y": 0
+      },
+      "focus": "BODY",
+      "status": 200,
+      "errors": [],
+      "overflow": false
+    }
+  ]
+}
