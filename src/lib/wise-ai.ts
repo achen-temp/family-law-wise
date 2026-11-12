@@ -11,6 +11,21 @@ export type NextStep = {
   label: string;
 };
 
+export function messageHandoffHref(
+  role: ConversationRole,
+  matterId: string,
+  threadId: string,
+  matterScoped: boolean,
+) {
+  const base =
+    role === "CLIENT"
+      ? `/portal/${matterId}/messages`
+      : matterScoped
+        ? `/matters/${matterId}/messages`
+        : "/messages";
+  return `${base}?thread=${encodeURIComponent(threadId)}`;
+}
+
 export function nextSteps(
   state: State,
   matterId: string,

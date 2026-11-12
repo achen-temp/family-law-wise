@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   Button,
   Dialog,
@@ -36,7 +36,6 @@ export function MessagesWorkspace({
   matterId?: string;
 }) {
   const store = useStore();
-  const router = useRouter();
   const params = useSearchParams();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -84,7 +83,15 @@ export function MessagesWorkspace({
     return <p className="card p-8">Matter not found.</p>;
 
   function select(id: string) {
-    router.push(`${path}?thread=${encodeURIComponent(id)}`, { scroll: false });
+    const next = new URLSearchParams(params.toString());
+    next.set("thread", id);
+    window.history.pushState(null, "", `${path}?${next.toString()}`);
+  }
+  function clearSelection() {
+    const next = new URLSearchParams(params.toString());
+    next.delete("thread");
+    const query = next.toString();
+    window.history.pushState(null, "", query ? `${path}?${query}` : path);
   }
   function create() {
     if (!subject.trim() || !targetMatter) return;
@@ -268,7 +275,7 @@ export function MessagesWorkspace({
               key={`${role}:${selected.id}`}
               thread={selected}
               role={role}
-              onBack={() => router.push(path, { scroll: false })}
+              onBack={clearSelection}
             />
           ) : (
             <div className="grid h-full place-items-center p-8 text-center">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Check,
   Circle,
@@ -18,15 +18,18 @@ import { CHECKLIST_SECTIONS, INTAKE_STEPS } from "@/lib/content";
 import { cn, initials, personName, clientParty, matterTitle } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
-import { DemoViewSwitcher } from "@/components/demo-view-switcher";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
 import { clientRequests } from "@/lib/document-selectors";
+import { DemoViewSwitcher } from "@/components/demo-view-switcher";
+import { PageLoading } from "@/components/page-loading";
 
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
   const pathname = usePathname();
   const { state } = useStore();
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  useEffect(() => setPendingPath(null), [pathname]);
   if (menuPath !== pathname) {
     setMenuPath(pathname);
     setOpen(false);
@@ -54,6 +57,8 @@ export function PortalShell({ token, children }: { token: string; children: Reac
       (item.status === "MISSING" || item.status === "REQUESTED"),
   ).length;
   const questionnaireOpen = INTAKE_STEPS.filter((step) => !intake.completed.includes(step.id)).length;
+  const activePath = pendingPath && pendingPath !== pathname ? pendingPath : pathname;
+  const navigating = activePath !== pathname;
 
   const chapter = INTAKE_STEPS.find((step) => pathname === `/portal/${token}/intake/${step.id}`);
   const pageLabel = chapter?.label ?? (pathname.includes("/intake") ? "Questionnaire" : pathname.includes("/checklist") ? "Checklist" : pathname.includes("/requests") ? "Requests" : pathname.includes("/messages") ? "Messages" : pathname.includes("/documents") ? "Submitted files" : "Home");
@@ -73,35 +78,38 @@ export function PortalShell({ token, children }: { token: string; children: Reac
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4 pt-3">
       <nav aria-label="Client navigation" className="space-y-0.5">
-        <NavLink href={`/portal/${token}`} active={pathname === `/portal/${token}`} icon={Home}>
+        <NavLink href={`/portal/${token}`} active={activePath === `/portal/${token}`} icon={Home} onNavigate={setPendingPath}>
           Home
         </NavLink>
         <NavLink
           href={`/portal/${token}/intake/${INTAKE_STEPS.find((step) => !intake.completed.includes(step.id))?.id ?? INTAKE_STEPS[0].id}`}
-          active={pathname.includes("/intake")}
+          active={activePath.includes("/intake")}
           icon={ClipboardList}
           badge={questionnaireOpen}
+          onNavigate={setPendingPath}
         >
           Questionnaire
         </NavLink>
         <NavLink
           href={`/portal/${token}/checklist`}
-          active={pathname.startsWith(`/portal/${token}/checklist`)}
+          active={activePath.startsWith(`/portal/${token}/checklist`)}
           icon={ListChecks}
           badge={missing}
+          onNavigate={setPendingPath}
         >
           Checklist
         </NavLink>
         <NavLink
           href={`/portal/${token}/requests`}
-          active={pathname.startsWith(`/portal/${token}/requests`)}
+          active={activePath.startsWith(`/portal/${token}/requests`)}
           icon={Inbox}
           badge={requested}
+          onNavigate={setPendingPath}
         >
           Requests
         </NavLink>
-        <NavLink href={`/portal/${token}/messages`} active={pathname.startsWith(`/portal/${token}/messages`)} icon={MessageSquare} badge={unreadCount(state, "CLIENT", token)}>Messages</NavLink>
-        <NavLink href={`/portal/${token}/documents`} active={pathname.startsWith(`/portal/${token}/documents`)} icon={ClipboardList}>Submitted files</NavLink>
+        <NavLink href={`/portal/${token}/messages`} active={activePath.startsWith(`/portal/${token}/messages`)} icon={MessageSquare} badge={unreadCount(state, "CLIENT", token)} onNavigate={setPendingPath}>Messages</NavLink>
+        <NavLink href={`/portal/${token}/documents`} active={activePath.startsWith(`/portal/${token}/documents`)} icon={ClipboardList} onNavigate={setPendingPath}>Submitted files</NavLink>
       </nav>
       <details open={pathname.includes("/intake/")} className="group mt-4 border-t border-rail-hover pt-2">
         <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md px-3 text-xs font-medium text-rail-muted hover:bg-rail-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rail-indicator [&::-webkit-details-marker]:hidden">
@@ -114,7 +122,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
             const done = intake.completed.includes(step.id);
             const dirty = state.intakeDirtySections?.[token]?.includes(step.id);
             return (
-              <Link key={step.id} href={href} aria-current={pathname === href ? "page" : undefined} className={cn("flex min-h-8 items-center gap-2 rounded-md border-l-[3px] px-3 py-1.5 text-xs leading-5", pathname === href ? "border-rail-indicator bg-rail-selected font-semibold" : "border-transparent text-rail-muted hover:bg-rail-hover")}>
+              <Link key={step.id} href={href} onNavigate={() => setPendingPath(href)} aria-current={activePath === href ? "page" : undefined} className={cn("flex min-h-8 items-center gap-2 rounded-md border-l-[3px] px-3 py-1.5 text-xs leading-5", activePath === href ? "border-rail-indicator bg-rail-selected font-semibold" : "border-transparent text-rail-muted hover:bg-rail-hover")}>
                 {done && !dirty ? <Check aria-hidden="true" className="size-3.5 shrink-0" /> : <Circle aria-hidden="true" className="size-3.5 shrink-0" />}
                 <span className="min-w-0 flex-1 break-words">{step.label}</span>
                 {dirty ? <span className="text-[10px]">Draft</span> : <span className="sr-only">{done ? "Confirmed" : "Not started"}</span>}
@@ -158,7 +166,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
           </nav>
           <DemoViewSwitcher role="Client" matter={matter} />
         </header>
-        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{children}</main>
+        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating ? <PageLoading /> : children}</main>
       </div>
     </div>
   );
@@ -169,17 +177,20 @@ function NavLink({
   active,
   icon: Icon,
   badge,
+  onNavigate,
   children,
 }: {
   href: string;
   active: boolean;
   icon: typeof Home;
   badge?: number;
+  onNavigate?: (href: string) => void;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
+      onNavigate={() => onNavigate?.(href)}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-9 items-center gap-2.5 rounded-md border-l-[3px] px-3 py-2 text-[13px] leading-5 text-rail-text",

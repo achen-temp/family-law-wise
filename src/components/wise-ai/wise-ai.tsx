@@ -17,7 +17,11 @@ import { ArrowRight, MessageSquare, Send, Sparkles, X } from "lucide-react";
 import { matterTitle } from "@/lib/format";
 import { draftKey } from "@/lib/messaging";
 import { useStore } from "@/lib/store";
-import { generalAnswer, nextSteps } from "@/lib/wise-ai";
+import {
+  generalAnswer,
+  messageHandoffHref,
+  nextSteps,
+} from "@/lib/wise-ai";
 import type { ConversationRole } from "@/lib/types";
 
 export function WiseAi({
@@ -110,6 +114,7 @@ export function WiseAi({
               key={`${role}:${selectedId}`}
               role={role}
               matterId={selectedId}
+              matterScoped={Boolean(matterId)}
               onClose={() => setOpen(false)}
             />
           ) : (
@@ -132,10 +137,12 @@ type Turn = { id: number; question: string; answer?: string };
 function AssistantSession({
   role,
   matterId,
+  matterScoped,
   onClose,
 }: {
   role: ConversationRole;
   matterId: string;
+  matterScoped: boolean;
   onClose: () => void;
 }) {
   const store = useStore();
@@ -186,9 +193,7 @@ function AssistantSession({
     const body = existing?.body ? `${existing.body}\n\n${question}` : question;
     store.saveMessageDraft(thread.id, role, "SHARED", { ...existing, body });
     onClose();
-    router.push(
-      `${role === "CLIENT" ? `/portal/${matterId}` : `/matters/${matterId}`}/messages?thread=${encodeURIComponent(thread.id)}`,
-    );
+    router.push(messageHandoffHref(role, matterId, thread.id, matterScoped));
   }
   const nextCards = (
     <div className="space-y-3">
