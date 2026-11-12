@@ -31,13 +31,14 @@ export function WiseAi({
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState("");
   const selectedId = matterId ?? chosen;
+  const selectedMatter = state.matters.find((matter) => matter.id === selectedId);
   return (
     <>
       <Button
         fullWidth
         startIcon={<Sparkles className="size-4" />}
         onClick={() => setOpen(true)}
-        className="justify-start rounded-lg px-3 py-2 text-sm text-white hover:bg-white/10"
+        className="!min-h-10 !justify-start !rounded-lg !border !border-primary/60 !bg-primary !px-3 !py-2 !text-sm !font-semibold !text-white hover:!bg-primary-hover"
       >
         Ask Wise AI
       </Button>
@@ -45,23 +46,38 @@ export function WiseAi({
         anchor="right"
         open={open}
         onClose={() => setOpen(false)}
-        slotProps={{ paper: { className: "w-full max-w-[460px]" } }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: "min(520px, 100vw)",
+              maxWidth: "none",
+              height: "100dvh",
+              maxHeight: "100dvh",
+              m: 0,
+              borderRadius: { xs: 0, sm: "12px 0 0 12px" },
+              overflow: "hidden",
+              boxShadow: "-16px 0 48px #20292729",
+            },
+          },
+        }}
       >
         <section
           role="dialog"
           aria-modal="true"
           aria-labelledby="wise-title"
-          className="flex h-full flex-col bg-white"
+          className="flex h-full min-h-0 flex-col bg-white"
         >
-          <header className="flex items-center gap-3 border-b border-line p-5">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand">
-              <Sparkles className="size-5" />
+          <header className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-4">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-white">
+              <Sparkles aria-hidden="true" className="size-5" />
             </span>
-            <div className="flex-1">
-              <h2 id="wise-title" className="text-lg font-semibold">
-                Wise AI assistant
+            <div className="min-w-0 flex-1">
+              <h2 id="wise-title" className="text-base font-semibold">
+                Wise AI
               </h2>
-              <p className="text-xs text-muted">Guidance for your next step</p>
+              <p className="truncate text-xs text-muted">
+                {selectedMatter ? matterTitle(selectedMatter) : "Guidance for your next step"}
+              </p>
             </div>
             <IconButton
               aria-label="Close Wise AI"
@@ -71,12 +87,14 @@ export function WiseAi({
             </IconButton>
           </header>
           {!matterId && (
-            <div className="border-b border-line p-5">
+            <div className="shrink-0 border-b border-line px-5 py-3">
               <TextField
                 select
                 label="Matter context"
                 value={chosen}
                 onChange={(event) => setChosen(event.target.value)}
+                size="small"
+                fullWidth
               >
                 <MenuItem value="">Choose a matter</MenuItem>
                 {state.matters.map((matter) => (
@@ -87,8 +105,7 @@ export function WiseAi({
               </TextField>
             </div>
           )}
-          {selectedId &&
-          state.matters.some((matter) => matter.id === selectedId) ? (
+          {selectedMatter ? (
             <AssistantSession
               key={`${role}:${selectedId}`}
               role={role}
@@ -96,7 +113,7 @@ export function WiseAi({
               onClose={() => setOpen(false)}
             />
           ) : (
-            <div className="p-8 text-center">
+            <div className="grid min-h-0 flex-1 place-items-center p-8 text-center">
               <Sparkles className="mx-auto mb-4 size-9 text-brand" />
               <h3 className="font-semibold">Start with a matter</h3>
               <p className="mt-2 text-sm leading-6 text-muted">
@@ -206,19 +223,22 @@ function AssistantSession({
 
   return (
     <>
-      <div className="px-5 pt-4">
-        <div className="rounded-xl border border-line p-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">
-            Matter context
-          </p>
-          <p className="mt-1 text-sm font-medium">{matterTitle(matter)}</p>
+      <div className="shrink-0 border-b border-line px-5 pt-3">
+        <div className="mb-1 flex min-w-0 items-center justify-between gap-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Matter context</p>
+          <span className="max-w-[70%] truncate text-right text-xs font-medium" title={matterTitle(matter)}>{matterTitle(matter)}</span>
         </div>
         <Tabs
           value={topic}
           onChange={(_, value: "next" | "general") => setTopic(value)}
           variant="fullWidth"
           aria-label="Wise AI topics"
-          className="mt-3"
+          className="min-h-11"
+          sx={{
+            minHeight: 44,
+            "& .MuiTab-root": { minHeight: 44, textTransform: "none", fontWeight: 600, fontSize: 13 },
+            "& .MuiTabs-indicator": { height: 2, backgroundColor: "var(--primary)" },
+          }}
         >
           <Tab label="Next steps" value="next" />
           <Tab label="General questions" value="general" />
@@ -226,12 +246,12 @@ function AssistantSession({
       </div>
       <div
         ref={content}
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-slate-50 p-5"
+        className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-subtle p-5"
         aria-live="polite"
       >
         <div className="flex items-center gap-2">
           <Sparkles className="size-4 text-brand" />
-          <span className="text-xs font-semibold">Wise AI</span>
+          <span className="text-xs font-semibold text-primary">Wise AI</span>
           <Chip
             label="Demo responses"
             size="small"
@@ -245,13 +265,17 @@ function AssistantSession({
               when your checklist or messages change.
             </p>
             {nextCards}
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => ask("What should I do next?")}
-            >
-              What should I do next?
-            </Button>
+              <div>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Suggested question</p>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => ask("What should I do next?")}
+                  className="!rounded-lg !border-line !bg-white !text-primary hover:!border-primary"
+                >
+                  What should I do next?
+                </Button>
+              </div>
           </>
         )}
         {topic === "general" && (
@@ -260,7 +284,9 @@ function AssistantSession({
               Ask about using your portal. For advice about your case, contact
               your attorney.
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Suggested questions</p>
+              <div className="flex flex-wrap gap-2">
               {[
                 "How does document review work?",
                 "What if I cannot get a file?",
@@ -270,12 +296,13 @@ function AssistantSession({
                   key={question}
                   size="small"
                   variant="outlined"
-                  className="rounded-xl bg-white text-left"
+                  className="!rounded-lg !border-line !bg-white !text-left !text-primary hover:!border-primary"
                   onClick={() => ask(question)}
                 >
                   {question}
                 </Button>
               ))}
+              </div>
             </div>
           </>
         )}
@@ -294,20 +321,23 @@ function AssistantSession({
               </p>
               <Button
                 size="small"
-                className="mt-3"
+                variant="outlined"
+                color="inherit"
+                className="!mt-3 !rounded-lg !border-line !text-muted hover:!border-primary hover:!bg-primary-soft hover:!text-primary"
                 startIcon={<MessageSquare className="size-4" />}
                 onClick={() => handoff(turn.question)}
               >
                 {role === "CLIENT"
-                  ? "Ask my attorney"
+                  ? "Ask my attorney in Messages"
                   : "Draft a client message"}
               </Button>
+              <p className="mt-1.5 text-[11px] leading-4 text-muted">Opens a message draft for your review. Nothing is sent automatically.</p>
             </div>
           </div>
         ))}
       </div>
       <form
-        className="border-t border-line p-5"
+        className="shrink-0 border-t border-line bg-white p-4 shadow-[0_-8px_20px_#2029270a] sm:p-5"
         onSubmit={(event) => {
           event.preventDefault();
           ask(value);
@@ -321,8 +351,10 @@ function AssistantSession({
           }
           multiline
           minRows={2}
-          maxRows={4}
+          maxRows={3}
           value={value}
+          fullWidth
+          size="small"
           onChange={(event) =>
             setQuestions((current) => ({
               ...current,
@@ -331,17 +363,19 @@ function AssistantSession({
           }
           slotProps={{ htmlInput: { maxLength: 2000 } }}
         />
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <p className="min-w-0 text-[11px] leading-4 text-muted">Example guidance only · review before sending</p>
           <Button
             type="submit"
             variant="contained"
+            className="!shrink-0 !bg-primary hover:!bg-primary-hover"
             disabled={!value.trim() || value.length > 2000}
             endIcon={<Send className="size-4" />}
           >
             Ask Wise AI
           </Button>
         </div>
-        <p className="mt-3 text-[11px] leading-4 text-muted">
+        <p className="mt-2 text-[10px] leading-4 text-muted">
           Frontend demo · preset replies, no model connected. General
           information, not legal advice. Messages to your attorney are reviewed
           by you before sending.

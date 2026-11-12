@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
-import { Button, Choice, Field, PageHeader } from "@/components/ui";
+import { useRef, useState, type FormEvent, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { Alert, Box, Button, Chip, FormHelperText, OutlinedInput, Paper, Select, ToggleButton, Typography, type SelectChangeEvent } from "@mui/material";
 import { INTAKE_STEPS } from "@/lib/content";
 import { getIntakeValidationIssue, normalizeIntakeSection, type IntakeValidationIssue } from "@/lib/intake-validation";
 import { LOOKBACK, TAX_YEAR } from "@/lib/requirements";
@@ -43,6 +43,7 @@ export function PortalIntake({ token, section }: { token: string; section: Secti
       const control = formRef.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(problem.field)}"]`);
       if (control?.matches("fieldset")) control.querySelector<HTMLButtonElement>("button")?.focus();
       else control?.focus();
+      control?.scrollIntoView({ block: "center" });
       return;
     }
     saveIntake(token, normalizeIntakeSection(section, draft), section);
@@ -51,35 +52,52 @@ export function PortalIntake({ token, section }: { token: string; section: Secti
     router.push(following ? `/portal/${token}/intake/${following.id}` : `/portal/${token}/checklist`);
   }
 
+  const chapterStatus = (id: SectionId) => state.intakeDirtySections?.[token]?.includes(id) ? "Draft" : intake.completed.includes(id) ? "Confirmed" : "Unanswered";
+  const currentStatus = chapterStatus(section);
+
   return (
-    <form ref={formRef} onSubmit={save} noValidate>
-      <PageHeader eyebrow={`Section ${index + 1} of ${INTAKE_STEPS.length}`} title={step.label} description={step.blurb} />
-      <p className="mb-3 text-xs leading-relaxed text-muted">
-        Dated demo: tax year {TAX_YEAR}; account statements {LOOKBACK[0]}–{LOOKBACK[LOOKBACK.length - 1]}.
-      </p>
-      <p className="mb-4 text-sm leading-relaxed text-muted">
-        Draft edits are retained as you type while this preview stays open, including when you go Back or open another section.
-        Refreshing or closing this preview resets all changes. Save and continue confirms this section and updates the checklist.
-        All shown questions are required except Other assets notes.
-      </p>
-      <div className="card space-y-4 p-5">{fields(section, draft, update, error, token, employmentConfirmed)}</div>
-      {error ? <p id="intake-error" role="alert" className="mt-3 text-sm text-rose-800">{error.message}</p> : null}
-      <p role="status" className="mt-3 text-xs text-muted">
-        {dirty ? "Draft retained in this preview. Confirm this section to update the checklist." : intake.completed.includes(section) ? "Section confirmed in this preview." : "Section not yet confirmed."}
-      </p>
-      <div className="mt-4 flex flex-wrap justify-between gap-2">
-        {index > 0 ? (
-          <Button type="button" onClick={() => router.push(`/portal/${token}/intake/${INTAKE_STEPS[index - 1].id}`)}>
-            Back
-          </Button>
-        ) : (
-          <span />
-        )}
-        <Button type="submit" variant="primary" className="w-full sm:w-auto">
-          {index === INTAKE_STEPS.length - 1 ? "Save and open checklist" : "Save and continue"}
-        </Button>
-      </div>
-    </form>
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "208px minmax(0, 680px)" }, gap: 3, alignItems: "start", maxWidth: 912 }}>
+      <Paper component="nav" variant="outlined" aria-label="Questionnaire chapters" sx={{ display: { xs: "none", lg: "block" }, p: 1, position: "sticky", top: 80, maxHeight: "calc(100dvh - 96px)", overflowY: "auto" }}>
+        <Typography sx={{ px: 1, py: 1.5, fontWeight: 600 }}>Questionnaire</Typography>
+        {INTAKE_STEPS.map((chapter, chapterIndex) => <Button key={chapter.id} component={Link} href={`/portal/${token}/intake/${chapter.id}`} aria-current={chapter.id === section ? "page" : undefined}
+          sx={{ display: "block", width: "100%", textAlign: "left", px: 1, py: 1, borderRadius: 1, bgcolor: chapter.id === section ? "var(--primary-soft)" : undefined, color: chapter.id === section ? "primary.main" : "text.primary" }}>
+          <Typography variant="body2" sx={{ fontWeight: chapter.id === section ? 600 : 400 }}>{chapterIndex + 1}. {chapter.label}</Typography>
+          <Typography variant="caption" color={chapterStatus(chapter.id) === "Draft" ? "warning.main" : chapterStatus(chapter.id) === "Confirmed" ? "primary.main" : "text.secondary"}>{chapterStatus(chapter.id)}</Typography>
+        </Button>)}
+      </Paper>
+      <Box sx={{ minWidth: 0, width: "100%", maxWidth: 680 }}>
+        <Paper variant="outlined" sx={{ display: { xs: "block", lg: "none" }, p: 2, mb: 2 }}>
+          <Field label="Questionnaire chapter">
+            <Select native fullWidth value={section} inputProps={{ "aria-label": "Questionnaire chapter" }} onChange={(event) => router.push(`/portal/${token}/intake/${event.target.value}`)}>
+              {INTAKE_STEPS.map((chapter, chapterIndex) => <option key={chapter.id} value={chapter.id}>{chapterIndex + 1}. {chapter.label} — {chapterStatus(chapter.id)}</option>)}
+            </Select>
+          </Field>
+        </Paper>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">Section {index + 1} of {INTAKE_STEPS.length}</Typography>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center", mt: 0.5 }}>
+            <Typography component="h1" variant="h1" sx={{ overflowWrap: "anywhere" }}>{step.label}</Typography>
+            <Chip label={currentStatus} color={currentStatus === "Draft" ? "warning" : currentStatus === "Confirmed" ? "success" : "default"} />
+          </Box>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>{step.blurb}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Dated demo: tax year {TAX_YEAR}; account statements {LOOKBACK[0]}–{LOOKBACK[LOOKBACK.length - 1]}.</Typography>
+        </Box>
+        <Paper component="form" ref={formRef} onSubmit={save} noValidate variant="outlined" sx={{ minWidth: 0, overflow: "hidden" }}>
+          <Box sx={{ p: { xs: 2, sm: 3 }, borderBottom: "1px solid", borderColor: "divider", bgcolor: "var(--surface-subtle)" }}>
+            <Typography variant="body2" color="text.secondary">Drafts stay in this open preview as you type or change chapters. Save and continue confirms answers and updates the checklist. Refreshing or closing resets changes. All shown questions are required except Other assets notes.</Typography>
+          </Box>
+          <Box sx={{ display: "grid", gap: 3, p: { xs: 2, sm: 3 }, pb: 4, "& [data-field], & fieldset": { scrollMarginBlock: "160px" } }}>
+            {fields(section, draft, update, error, token, employmentConfirmed)}
+            {error ? <Alert id="intake-error" severity="error">{error.message}</Alert> : null}
+          </Box>
+          <Box sx={{ minHeight: 56, p: 2, borderTop: "1px solid", borderColor: "divider", bgcolor: "background.paper", display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center", justifyContent: "space-between", borderRadius: "0 0 8px 8px" }}>
+            <Typography role="status" variant="body2" color="text.secondary" sx={{ flexBasis: { xs: "100%", sm: "auto" }, flexGrow: 1, minWidth: 0, maxWidth: { sm: 240 } }}>{dirty ? "Draft retained in this preview. Confirm this section to update the checklist." : intake.completed.includes(section) ? "Section confirmed in this preview." : "Section not yet confirmed."}</Typography>
+            <Button type="button" variant="outlined" disabled={index === 0} onClick={() => router.push(`/portal/${token}/intake/${INTAKE_STEPS[index - 1].id}`)}>Back</Button>
+            <Button type="submit" variant="contained">{index === INTAKE_STEPS.length - 1 ? "Save and open checklist" : "Save and continue"}</Button>
+          </Box>
+        </Paper>
+      </Box>
+    </Box>
   );
 }
 
@@ -89,10 +107,10 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
       return (
         <>
           <Field label="Phone">
-            <input className="field" type="tel" autoComplete="tel" {...validationProps("personal.phone", error)} value={draft.personal.phone} onChange={(event) => update({ ...draft, personal: { ...draft.personal, phone: event.target.value } })} />
+            <Input type="tel" autoComplete="tel" {...validationProps("personal.phone", error)} value={draft.personal.phone} onChange={(event) => update({ ...draft, personal: { ...draft.personal, phone: event.target.value } })} />
           </Field>
           <Field label="Address">
-            <input className="field" autoComplete="street-address" {...validationProps("personal.address", error)} value={draft.personal.address} onChange={(event) => update({ ...draft, personal: { ...draft.personal, address: event.target.value } })} />
+            <Input autoComplete="street-address" {...validationProps("personal.address", error)} value={draft.personal.address} onChange={(event) => update({ ...draft, personal: { ...draft.personal, address: event.target.value } })} />
           </Field>
         </>
       );
@@ -105,13 +123,12 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
             onChange={(employed) => update({ ...draft, employment: { ...draft.employment, employed } })}
           />
           {draft.employment.employed ? (
-            <>
+            <Box sx={{ display: "grid", gap: 3, pl: 2, borderLeft: "2px solid", borderColor: "divider" }}>
               <Field label="Employer">
-                <input className="field" {...validationProps("employment.employer", error)} value={draft.employment.employer} onChange={(event) => update({ ...draft, employment: { ...draft.employment, employer: event.target.value } })} />
+                <Input {...validationProps("employment.employer", error)} value={draft.employment.employer} onChange={(event) => update({ ...draft, employment: { ...draft.employment, employer: event.target.value } })} />
               </Field>
               <Field label="How are you paid?">
-                <select
-                  className="field"
+                <IntakeSelect
                   {...validationProps("employment.payFrequency", error)} value={draft.employment.payFrequency}
                   onChange={(event) =>
                     update({
@@ -125,11 +142,11 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
                   <option>Bi-weekly</option>
                   <option>Semi-monthly</option>
                   <option>Monthly</option>
-                </select>
+                </IntakeSelect>
               </Field>
               <YesNo label="Do you receive bonuses?" field="employment.bonuses" error={error} value={draft.employment.bonuses} onChange={(bonuses) => update({ ...draft, employment: { ...draft.employment, bonuses } })} />
               <YesNo label="Do you receive commissions?" field="employment.commissions" error={error} value={draft.employment.commissions} onChange={(commissions) => update({ ...draft, employment: { ...draft.employment, commissions } })} />
-            </>
+            </Box>
           ) : null}
         </>
       );
@@ -143,11 +160,11 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
       return (
         <>
           <Field label="Annual base salary" hint="Enter US dollars, 0 or more. Up to two decimal places; no commas or currency symbols. These are self-reported demo answers, not verified financial facts.">
-            <input className="field" inputMode="decimal" {...validationProps("income.baseSalary", error)} value={draft.income.baseSalary} onChange={(event) => update({ ...draft, income: { ...draft.income, baseSalary: event.target.value } })} />
+            <Input inputMode="decimal" {...validationProps("income.baseSalary", error)} value={draft.income.baseSalary} onChange={(event) => update({ ...draft, income: { ...draft.income, baseSalary: event.target.value } })} />
           </Field>
           {draft.employment.bonuses || draft.employment.commissions ? (
             <Field label="Annual bonus and commission income" hint="Enter 0 if none was received. US dollars, up to two decimal places.">
-              <input className="field" inputMode="decimal" {...validationProps("income.bonus", error)} value={draft.income.bonus} onChange={(event) => update({ ...draft, income: { ...draft.income, bonus: event.target.value } })} />
+              <Input inputMode="decimal" {...validationProps("income.bonus", error)} value={draft.income.bonus} onChange={(event) => update({ ...draft, income: { ...draft.income, bonus: event.target.value } })} />
             </Field>
           ) : null}
         </>
@@ -175,7 +192,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
           <YesNo label="Do you have investment accounts outside retirement plans?" field="investments.has" error={error} value={draft.investments.has} onChange={(has) => update({ ...draft, investments: { ...draft.investments, has } })} />
           {draft.investments.has ? (
             <Field label="Institution">
-              <input className="field" {...validationProps("investments.institution", error)} value={draft.investments.institution} onChange={(event) => update({ ...draft, investments: { ...draft.investments, institution: event.target.value } })} />
+              <Input {...validationProps("investments.institution", error)} value={draft.investments.institution} onChange={(event) => update({ ...draft, investments: { ...draft.investments, institution: event.target.value } })} />
             </Field>
           ) : null}
         </>
@@ -186,7 +203,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
           <YesNo label="Do you have a retirement plan?" field="retirement.has" error={error} value={draft.retirement.has} onChange={(has) => update({ ...draft, retirement: { ...draft.retirement, has } })} />
           {draft.retirement.has ? (
             <Field label="Plan name">
-              <input className="field" {...validationProps("retirement.planName", error)} value={draft.retirement.planName} onChange={(event) => update({ ...draft, retirement: { ...draft.retirement, planName: event.target.value } })} placeholder="Fidelity 401(k)" />
+              <Input {...validationProps("retirement.planName", error)} value={draft.retirement.planName} onChange={(event) => update({ ...draft, retirement: { ...draft.retirement, planName: event.target.value } })} placeholder="Fidelity 401(k)" />
             </Field>
           ) : null}
         </>
@@ -197,7 +214,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
           <YesNo label="Do you own real estate?" field="realEstate.owns" error={error} value={draft.realEstate.owns} onChange={(owns) => update({ ...draft, realEstate: { ...draft.realEstate, owns } })} />
           {draft.realEstate.owns ? (
             <Field label="Property address">
-              <input className="field" {...validationProps("realEstate.address", error)} value={draft.realEstate.address} onChange={(event) => update({ ...draft, realEstate: { ...draft.realEstate, address: event.target.value } })} />
+              <Input {...validationProps("realEstate.address", error)} value={draft.realEstate.address} onChange={(event) => update({ ...draft, realEstate: { ...draft.realEstate, address: event.target.value } })} />
             </Field>
           ) : null}
         </>
@@ -212,7 +229,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
           <YesNo label="Do you have other loans?" field="debts.hasLoans" error={error} value={draft.debts.hasLoans} onChange={(hasLoans) => update({ ...draft, debts: { ...draft.debts, hasLoans } })} />
           {draft.debts.hasLoans ? (
             <Field label="Lender">
-              <input className="field" {...validationProps("debts.loanName", error)} value={draft.debts.loanName} onChange={(event) => update({ ...draft, debts: { ...draft.debts, loanName: event.target.value } })} />
+              <Input {...validationProps("debts.loanName", error)} value={draft.debts.loanName} onChange={(event) => update({ ...draft, debts: { ...draft.debts, loanName: event.target.value } })} />
             </Field>
           ) : null}
         </>
@@ -231,7 +248,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
           <YesNo label="Do you own a business or an interest in one?" field="business.has" error={error} value={draft.business.has} onChange={(has) => update({ ...draft, business: { ...draft.business, has } })} />
           {draft.business.has ? (
             <Field label="Business name">
-              <input className="field" {...validationProps("business.name", error)} value={draft.business.name} onChange={(event) => update({ ...draft, business: { ...draft.business, name: event.target.value } })} />
+              <Input {...validationProps("business.name", error)} value={draft.business.name} onChange={(event) => update({ ...draft, business: { ...draft.business, name: event.target.value } })} />
             </Field>
           ) : null}
         </>
@@ -239,7 +256,7 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
     case "other":
       return (
         <Field label="Anything else (optional)">
-          <textarea className="field min-h-28" {...validationProps("other.notes", error)} value={draft.other.notes} onChange={(event) => update({ ...draft, other: { notes: event.target.value } })} />
+          <Textarea {...validationProps("other.notes", error)} value={draft.other.notes} onChange={(event) => update({ ...draft, other: { notes: event.target.value } })} />
         </Field>
       );
     default:
@@ -249,17 +266,17 @@ function fields(section: SectionId, draft: Intake, update: (next: Intake) => voi
 
 function YesNo({ label, value, onChange, field, error }: { label: string; value: boolean | null; onChange: (value: boolean) => void; field: string; error: IntakeValidationIssue | null }) {
   return (
-    <fieldset {...validationProps(field, error)}>
-      <legend className="mb-1.5 text-sm font-medium">{label}</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+    <Box component="fieldset" {...validationProps(field, error)} sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}>
+      <Typography component="legend" sx={{ mb: 1, fontWeight: 500 }}>{label}</Typography>
+      <Box sx={{ display: "flex", gap: 1 }}>
         <Choice checked={value === true} onClick={() => onChange(true)}>
           Yes
         </Choice>
         <Choice checked={value === false} onClick={() => onChange(false)}>
           No
         </Choice>
-      </div>
-    </fieldset>
+      </Box>
+    </Box>
   );
 }
 
@@ -271,40 +288,35 @@ function AccountEditor({ accounts, onChange, error }: { accounts: BankAccount[];
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-muted">Changing the last four digits creates separate checklist items when you confirm this section. Earlier files and review decisions stay with the original digits.</p>
       {accounts.map((account, index) => (
-        <fieldset key={account.id} className="space-y-3 rounded-lg border border-line p-3">
+        <Paper component="fieldset" variant="outlined" key={account.id} sx={{ display: "grid", gap: 2, minWidth: 0, p: 2, m: 0 }}>
           <legend className="px-1 text-xs font-medium text-muted">Bank account {index + 1}</legend>
           <div className="flex justify-end">
-            <button type="button" className="text-xs text-muted hover:text-foreground" aria-label={`Remove bank account ${index + 1}`} onClick={() => onChange(accounts.filter((item) => item.id !== account.id))}>
+            <Button type="button" size="small" variant="text" aria-label={`Remove bank account ${index + 1}`} onClick={() => onChange(accounts.filter((item) => item.id !== account.id))}>
               Remove
-            </button>
+            </Button>
           </div>
-          <Field label="Institution">
-            <input className="field" {...validationProps(`bank.${account.id}.institution`, error)} value={account.institution} onChange={(event) => patch(account.id, { institution: event.target.value })} />
-          </Field>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" }, gap: 2 }}>
+            <Field label="Institution">
+              <Input {...validationProps(`bank.${account.id}.institution`, error)} value={account.institution} onChange={(event) => patch(account.id, { institution: event.target.value })} />
+            </Field>
             <Field label="Type">
-              <select className="field" value={account.accountType} onChange={(event) => patch(account.id, { accountType: event.target.value as BankAccount["accountType"] })}>
-                <option>Checking</option>
-                <option>Savings</option>
-                <option>Money market</option>
-              </select>
+              <IntakeSelect value={account.accountType} onChange={(event) => patch(account.id, { accountType: event.target.value as BankAccount["accountType"] })}>
+                <option>Checking</option><option>Savings</option><option>Money market</option>
+              </IntakeSelect>
             </Field>
             <Field label="Last 4 digits">
-              <input className="field" inputMode="numeric" {...validationProps(`bank.${account.id}.last4`, error)} maxLength={4} value={account.last4} onChange={(event) => patch(account.id, { last4: event.target.value.replace(/\D/g, "").slice(0, 4) })} />
+              <Input inputMode="numeric" {...validationProps(`bank.${account.id}.last4`, error)} maxLength={4} value={account.last4} onChange={(event) => patch(account.id, { last4: event.target.value.replace(/\D/g, "").slice(0, 4) })} />
             </Field>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Choice checked={account.ownership === "Individual"} onClick={() => patch(account.id, { ownership: "Individual" })}>
-              Individual
-            </Choice>
-            <Choice checked={account.ownership === "Joint"} onClick={() => patch(account.id, { ownership: "Joint" })}>
-              Joint
-            </Choice>
-          </div>
-        </fieldset>
+            <Field label="Ownership">
+              <IntakeSelect value={account.ownership} onChange={(event) => patch(account.id, { ownership: event.target.value as BankAccount["ownership"] })}>
+                <option>Individual</option><option>Joint</option>
+              </IntakeSelect>
+            </Field>
+          </Box>
+        </Paper>
       ))}
       <Button
-        type="button"
+        type="button" variant="outlined"
         {...validationProps("bank.add", error)}
         onClick={() =>
           onChange([
@@ -327,22 +339,22 @@ function CardEditor({ cards, onChange, error }: { cards: CardAccount[]; onChange
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-muted">Changing the last four digits creates separate checklist items when you confirm this section. Earlier files and review decisions stay with the original digits.</p>
       {cards.map((card, index) => (
-        <fieldset key={card.id} className="space-y-3 rounded-lg border border-line p-3">
+        <Paper component="fieldset" variant="outlined" key={card.id} sx={{ display: "grid", gap: 2, minWidth: 0, p: 2, m: 0 }}>
           <legend className="px-1 text-xs font-medium text-muted">Credit card {index + 1}</legend>
           <div className="flex justify-end">
-            <button type="button" className="text-xs text-muted hover:text-foreground" aria-label={`Remove credit card ${index + 1}`} onClick={() => onChange(cards.filter((item) => item.id !== card.id))}>Remove</button>
+            <Button type="button" size="small" variant="text" aria-label={`Remove credit card ${index + 1}`} onClick={() => onChange(cards.filter((item) => item.id !== card.id))}>Remove</Button>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             <Field label="Institution">
-              <input className="field" {...validationProps(`debts.${card.id}.institution`, error)} value={card.institution} onChange={(event) => patch(card.id, { institution: event.target.value })} />
+              <Input {...validationProps(`debts.${card.id}.institution`, error)} value={card.institution} onChange={(event) => patch(card.id, { institution: event.target.value })} />
             </Field>
             <Field label="Last 4 digits">
-              <input className="field" inputMode="numeric" maxLength={4} {...validationProps(`debts.${card.id}.last4`, error)} value={card.last4} onChange={(event) => patch(card.id, { last4: event.target.value.replace(/\D/g, "").slice(0, 4) })} />
+              <Input inputMode="numeric" maxLength={4} {...validationProps(`debts.${card.id}.last4`, error)} value={card.last4} onChange={(event) => patch(card.id, { last4: event.target.value.replace(/\D/g, "").slice(0, 4) })} />
             </Field>
           </div>
-        </fieldset>
+        </Paper>
       ))}
-      <Button type="button" {...validationProps("debts.add", error)} onClick={() => onChange([...cards, { id: `card-${crypto.randomUUID()}`, institution: "", last4: "" }])}>
+      <Button type="button" variant="outlined" {...validationProps("debts.add", error)} onClick={() => onChange([...cards, { id: `card-${crypto.randomUUID()}`, institution: "", last4: "" }])}>
         Add a card
       </Button>
     </div>
@@ -355,4 +367,29 @@ function validationProps(field: string, error: IntakeValidationIssue | null) {
     "aria-invalid": error?.field === field || undefined,
     "aria-describedby": error?.field === field ? "intake-error" : undefined,
   };
+}
+
+// Keep validation markers on the native controls so first-error focus still works.
+function Input({ value, onChange, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <OutlinedInput fullWidth value={value} onChange={onChange} error={Boolean(props["aria-invalid"])} slotProps={{ input: props }} />;
+}
+
+function Textarea({ value, onChange, ...props }: Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, "value" | "onChange" | "aria-invalid" | "aria-describedby">) {
+  return <OutlinedInput fullWidth multiline minRows={4} value={value} onChange={onChange} slotProps={{ input: props }} />;
+}
+
+function IntakeSelect({ value, onChange, children, ...props }: Pick<SelectHTMLAttributes<HTMLSelectElement>, "children" | "aria-invalid" | "aria-describedby"> & { value: string; onChange: (event: SelectChangeEvent<string>) => void }) {
+  return <Select native fullWidth value={value} onChange={onChange} inputProps={props} error={Boolean(props["aria-invalid"])}>{children}</Select>;
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return <Box component="label" sx={{ display: "block", minWidth: 0 }}>
+    <Typography component="span" sx={{ display: "block", mb: 1, fontWeight: 500 }}>{label}</Typography>
+    {children}
+    {hint ? <FormHelperText sx={{ mx: 0 }}>{hint}</FormHelperText> : null}
+  </Box>;
+}
+
+function Choice({ checked, onClick, children }: { checked: boolean; onClick: () => void; children: ReactNode }) {
+  return <ToggleButton type="button" value={String(children)} selected={checked} onClick={onClick} sx={{ flex: 1 }}>{children}</ToggleButton>;
 }
