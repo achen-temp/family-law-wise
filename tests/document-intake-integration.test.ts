@@ -3,8 +3,72 @@ import test from "node:test";
 import { reducer } from "../src/lib/store";
 import { initialState } from "../src/lib/seed";
 import { clientRequests } from "../src/lib/document-selectors";
+import {
+  formatFileSize,
+  MAX_DOCUMENT_BYTES,
+  validateDocumentFile,
+} from "../src/lib/document-upload";
 
 const matterId = "matter-john";
+
+test("DESK-15: document selection validates type, size and empty files", () => {
+  assert.equal(
+    validateDocumentFile(new File([], "empty.pdf", { type: "application/pdf" })),
+    "Choose a file that is not empty.",
+  );
+  assert.equal(
+    validateDocumentFile(new File(["x"], "notes.txt", { type: "text/plain" })),
+    "Choose a PDF, JPG, or PNG file.",
+  );
+  assert.equal(
+    validateDocumentFile(
+      new File([new Uint8Array(MAX_DOCUMENT_BYTES + 1)], "large.pdf", {
+        type: "application/pdf",
+      }),
+    ),
+    "Choose a file no larger than 10 MB.",
+  );
+  assert.equal(
+    validateDocumentFile(new File(["image"], "photo.jpg", { type: "image/jpeg" })),
+    null,
+  );
+  assert.equal(
+    validateDocumentFile(new File(["pdf"], "statement.pdf", { type: "" })),
+    null,
+  );
+  assert.equal(formatFileSize(1_843_200), "1.8 MB");
+});
+
+test("DESK-15: a replacement remains in review and closes the returned request", () => {
+  const requirement = initialState.requirements.find(
+    (item) => item.matterId === matterId && item.status === "NEEDS_REVIEW",
+  )!;
+  const original = initialState.documents.find(
+    (document) => document.requirementIds.includes(requirement.id) && document.status === "NEEDS_REVIEW",
+  )!;
+  const rejected = reducer(initialState, {
+    type: "REJECT_DOCUMENT",
+    documentId: original.id,
+    note: "The statement period does not match the request.",
+  });
+  assert.equal(clientRequests(rejected, matterId).some((item) => item.id === requirement.id), true);
+
+  const replacement = new File(["replacement"], "correct-period.pdf", {
+    type: "application/pdf",
+  });
+  const replaced = reducer(rejected, {
+    type: "UPLOAD",
+    matterId,
+    requirementId: requirement.id,
+    filename: replacement.name,
+    localFile: replacement,
+  });
+
+  assert.equal(replaced.documents[0].status, "NEEDS_REVIEW");
+  assert.equal(replaced.documents.find((document) => document.id === original.id)?.status, "REJECTED");
+  assert.equal(replaced.requirements.find((item) => item.id === requirement.id)?.status, "NEEDS_REVIEW");
+  assert.equal(clientRequests(replaced, matterId).some((item) => item.id === requirement.id), false);
+});
 
 test("M1-04/M2-01: uploading a local file preserves an unfinished questionnaire draft", () => {
   const intake = structuredClone(initialState.intakes[matterId]);
