@@ -21,8 +21,10 @@ import { CHECKLIST_SECTIONS } from "@/lib/content";
 import { cn, initials, matterTitle, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
-import { DemoViewSwitcher } from "@/components/demo-view-switcher";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
+import { DemoViewSwitcher } from "@/components/demo-view-switcher";
+import { DemoRoleSwitch } from "@/components/demo-role-switch";
+import { PageLoading } from "@/components/page-loading";
 
 const MATTER_NAV = [
   { slug: "", label: "Overview", icon: LayoutDashboard },
@@ -39,8 +41,10 @@ export function FirmShell({ children }: { children: ReactNode }) {
   const { state } = useStore();
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   if (menuPath !== pathname) {
     setMenuPath(pathname);
+    setPendingPath(null);
     setOpen(false);
   }
   const matterMatch = pathname.match(/^\/matters\/([^/]+)/);
@@ -58,6 +62,8 @@ export function FirmShell({ children }: { children: ReactNode }) {
   const reviewDocs = matter
     ? state.documents.filter((item) => item.matterId === matter.id && item.status === "NEEDS_REVIEW").length
     : 0;
+  const activePath = pendingPath && pendingPath !== pathname ? pendingPath : pathname;
+  const navigating = activePath !== pathname;
 
   const pageLabel = matter
     ? MATTER_NAV.find((item) => item.slug && pathname.startsWith(`/matters/${matter.id}${item.slug}`))?.label ?? "Overview"
@@ -75,25 +81,26 @@ export function FirmShell({ children }: { children: ReactNode }) {
       <div className="min-h-0 flex-1 overflow-y-auto pb-2">
       <nav aria-label="Workspace navigation" className="space-y-0.5 px-2 pt-3">
         <p className="px-3 pb-2 text-[11px] font-medium text-rail-muted">Workspace</p>
-        <NavLink href="/overview" active={pathname === "/overview"} icon={LayoutDashboard}>
+        <NavLink href="/overview" active={activePath === "/overview"} icon={LayoutDashboard} onNavigate={setPendingPath}>
           Overview
         </NavLink>
         <NavLink
           href="/matters"
-          active={pathname === "/matters" || pathname === "/matters/new"}
+          active={activePath === "/matters" || activePath === "/matters/new"}
           icon={Briefcase}
           badge={openMatters}
+          onNavigate={setPendingPath}
         >
           Matters
         </NavLink>
-        <NavLink href="/messages" active={pathname === "/messages"} icon={MessageSquare} badge={unreadCount(state, "ATTORNEY")}>
-          Messages
+        <NavLink href="/messages" active={activePath === "/messages"} icon={MessageSquare} badge={unreadCount(state, "ATTORNEY")} onNavigate={setPendingPath}>
+          All messages
         </NavLink>
-        <NavLink href="/templates" active={pathname.startsWith("/templates")} icon={LayoutTemplate}>
+        <NavLink href="/templates" active={activePath.startsWith("/templates")} icon={LayoutTemplate} onNavigate={setPendingPath}>
           Templates
         </NavLink>
-        <NavLink href="/documents" active={pathname === "/documents"} icon={Files} badge={state.documents.filter((doc) => doc.status === "NEEDS_REVIEW").length}>Review queue</NavLink>
-        <NavLink href="/settings" active={pathname.startsWith("/settings")} icon={Settings}>
+        <NavLink href="/documents" active={activePath === "/documents"} icon={Files} badge={state.documents.filter((doc) => doc.status === "NEEDS_REVIEW").length} onNavigate={setPendingPath}>Review queue</NavLink>
+        <NavLink href="/settings" active={activePath.startsWith("/settings")} icon={Settings} onNavigate={setPendingPath}>
           Settings
         </NavLink>
       </nav>
@@ -105,10 +112,10 @@ export function FirmShell({ children }: { children: ReactNode }) {
           <nav aria-label="Matter navigation" className="mt-3 space-y-0.5">
             {MATTER_NAV.map((item) => {
               const href = `/matters/${matter.id}${item.slug}`;
-              const active = item.slug === "" ? pathname === href : pathname.startsWith(href);
+              const active = item.slug === "" ? activePath === href : activePath.startsWith(href);
               const badge = item.slug === "/checklist" ? attention : item.slug === "/documents" ? reviewDocs : item.slug === "/messages" ? unreadCount(state, "ATTORNEY", matter.id) : 0;
               return (
-                <NavLink key={item.label} href={href} active={active} icon={item.icon} badge={badge}>
+                <NavLink key={item.label} href={href} active={active} icon={item.icon} badge={badge} onNavigate={setPendingPath}>
                   {item.label}
                 </NavLink>
               );
@@ -162,9 +169,9 @@ export function FirmShell({ children }: { children: ReactNode }) {
               <li aria-current="page" className="shrink-0 font-medium text-foreground">{pageLabel}</li>
             </ol>
           </nav>
-          <DemoViewSwitcher role="Attorney" matter={matter} />
+          {process.env.NODE_ENV === "development" && matter ? <DemoRoleSwitch role="ATTORNEY" matterId={matter.id} preserveMessages={pathname.endsWith("/messages")} /> : <DemoViewSwitcher role="Attorney" matter={matter} />}
         </header>
-        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === "/overview" && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{children}</main>
+        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === "/overview" && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating && <PageLoading />}<div className={navigating ? "hidden" : "contents"}>{children}</div></main>
       </div>
     </div>
   );
@@ -181,17 +188,20 @@ function NavLink({
   active,
   icon: Icon,
   badge,
+  onNavigate,
   children,
 }: {
   href: string;
   active: boolean;
   icon: typeof Briefcase;
   badge?: number;
+  onNavigate?: (href: string) => void;
   children: ReactNode;
 }) {
   return (
     <Link
       href={href}
+      onNavigate={() => onNavigate?.(href)}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-9 items-center gap-2.5 rounded-md border-l-[3px] px-3 py-2 text-[13px] leading-5 text-rail-text",

@@ -8,7 +8,7 @@ import {
   threadMessages,
   unreadCount,
 } from "../src/lib/messaging";
-import { nextSteps } from "../src/lib/wise-ai";
+import { messageHandoffHref, nextSteps } from "../src/lib/wise-ai";
 import type { Message, State } from "../src/lib/types";
 
 const fresh = (): State => structuredClone(initialState);
@@ -141,6 +141,36 @@ test("AI handoff creates an editable draft without sending a message", () => {
   assert.equal(
     next.messageDrafts[draftKey("thread-john-general", "CLIENT")].body,
     "Please explain my next step.",
+  );
+});
+
+test("AI handoff stays in the global inbox unless it started inside a matter", () => {
+  assert.equal(
+    messageHandoffHref(
+      "ATTORNEY",
+      "matter-john",
+      "thread-john-general",
+      false,
+    ),
+    "/messages?thread=thread-john-general",
+  );
+  assert.equal(
+    messageHandoffHref(
+      "ATTORNEY",
+      "matter-john",
+      "thread-john-general",
+      true,
+    ),
+    "/matters/matter-john/messages?thread=thread-john-general",
+  );
+  assert.equal(
+    messageHandoffHref(
+      "CLIENT",
+      "matter-john",
+      "thread-john-general",
+      false,
+    ),
+    "/portal/matter-john/messages?thread=thread-john-general",
   );
 });
 

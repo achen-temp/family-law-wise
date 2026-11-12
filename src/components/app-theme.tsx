@@ -95,7 +95,20 @@ const theme = createTheme({
     },
     MuiSelect: {
       defaultProps: { IconComponent: ChevronDown },
-      styleOverrides: { select: { minHeight: "21px", paddingTop: 8.5, paddingBottom: 8.5 }, icon: { width: 16, height: 16, top: "calc(50% - 8px)" } },
+      styleOverrides: {
+        select: { minHeight: "21px", paddingTop: 8.5, paddingBottom: 8.5 },
+        icon: {
+          top: "50%",
+          right: 12,
+          width: 16,
+          height: 16,
+          marginTop: 0,
+          transform: "translateY(-50%)",
+          "&.MuiSelect-iconOpen": {
+            transform: "translateY(-50%) rotate(180deg)",
+          },
+        },
+      },
     },
     MuiToggleButton: {
       styleOverrides: { root: { minHeight: 40, borderRadius: 6, borderColor: "var(--border-strong)", padding: "8px 12px", textTransform: "none", "&.Mui-selected": { backgroundColor: "var(--primary-soft)", color: "var(--primary)" } } },
