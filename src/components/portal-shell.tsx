@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Check,
   Circle,
@@ -20,7 +20,7 @@ import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
 import { clientRequests } from "@/lib/document-selectors";
-import { DemoViewSwitcher } from "@/components/demo-view-switcher";
+import { DemoRoleSwitch } from "@/components/demo-role-switch";
 import { PageLoading } from "@/components/page-loading";
 
 export function PortalShell({ token, children }: { token: string; children: ReactNode }) {
@@ -29,9 +29,9 @@ export function PortalShell({ token, children }: { token: string; children: Reac
   const [open, setOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  useEffect(() => setPendingPath(null), [pathname]);
   if (menuPath !== pathname) {
     setMenuPath(pathname);
+    setPendingPath(null);
     setOpen(false);
   }
   const matter = state.matters.find((item) => item.id === token);
@@ -164,7 +164,7 @@ export function PortalShell({ token, children }: { token: string; children: Reac
               <li aria-current="page" className="shrink-0 font-medium text-foreground" title={pageLabel}>{pageLabel}</li>
             </ol>
           </nav>
-          <DemoViewSwitcher role="Client" matter={matter} />
+          <DemoRoleSwitch role="CLIENT" matterId={token} preserveMessages={pathname.endsWith("/messages")} />
         </header>
         <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating ? <PageLoading /> : children}</main>
       </div>
