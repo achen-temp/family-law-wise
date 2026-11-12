@@ -2,121 +2,106 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Button, Field, PageHeader } from "@/components/ui";
-import type { MatterType } from "@/lib/types";
+import { Alert, Box, Button, Divider, Paper, TextField, Typography } from "@mui/material";
+import { PageHeader } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { validEmail } from "@/lib/workspace-validation";
 
-const TYPES: MatterType[] = ["Divorce", "Post Judgment", "Child Support", "Other"];
+const EMPTY_FIELDS = {
+  clientFirst: "", clientLast: "", clientEmail: "",
+  otherFirst: "", otherLast: "", county: "", matterName: "",
+};
+type FieldName = keyof typeof EMPTY_FIELDS;
+const REQUIRED_FIELDS = {
+  clientFirst: "client first name", clientLast: "client last name", clientEmail: "client email address",
+  otherFirst: "other party first name", otherLast: "other party last name", county: "county",
+} as const;
+const twoColumns = { display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))" }, gap: 3 };
 
 export function NewMatterForm() {
   const router = useRouter();
   const { createMatter } = useStore();
-  const [clientFirst, setClientFirst] = useState("");
-  const [clientLast, setClientLast] = useState("");
-  const [clientEmail, setClientEmail] = useState("");
-  const [otherFirst, setOtherFirst] = useState("");
-  const [otherLast, setOtherLast] = useState("");
-  const [county, setCounty] = useState("");
-  const [matterName, setMatterName] = useState("");
-  const [error, setError] = useState("");
+  const [fields, setFields] = useState(EMPTY_FIELDS);
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fields = [
-      { name: "clientFirst", label: "client first name", value: clientFirst },
-      { name: "clientLast", label: "client last name", value: clientLast },
-      { name: "clientEmail", label: "client email address", value: clientEmail },
-      { name: "otherFirst", label: "other party first name", value: otherFirst },
-      { name: "otherLast", label: "other party last name", value: otherLast },
-      { name: "county", label: "county", value: county },
-    ];
-    const invalid = fields.find((field) => !field.value.trim() || (field.name === "clientEmail" && !validEmail(field.value)));
-    if (invalid) {
-      setError(`Enter ${invalid.name === "clientEmail" ? "a valid " : "the "}${invalid.label}.`);
-      (event.currentTarget.elements.namedItem(invalid.name) as HTMLInputElement)?.focus();
+    const nextErrors: Partial<Record<FieldName, string>> = {};
+    for (const name of Object.keys(REQUIRED_FIELDS) as (keyof typeof REQUIRED_FIELDS)[]) {
+      if (!fields[name].trim()) nextErrors[name] = `Enter the ${REQUIRED_FIELDS[name]}.`;
+      else if (name === "clientEmail" && !validEmail(fields[name])) nextErrors[name] = "Enter a valid client email address.";
+    }
+    setErrors(nextErrors);
+    const firstInvalid = Object.keys(nextErrors)[0];
+    if (firstInvalid) {
+      (event.currentTarget.elements.namedItem(firstInvalid) as HTMLInputElement)?.focus();
       return;
     }
     const id = createMatter({
-      clientFirst: clientFirst.trim(),
-      clientLast: clientLast.trim(),
-      clientEmail: clientEmail.trim(),
-      otherFirst: otherFirst.trim(),
-      otherLast: otherLast.trim(),
-      state: "NJ",
-      county: county.trim(),
-      matterType: "Divorce",
-      matterName: matterName.trim(),
+      clientFirst: fields.clientFirst.trim(), clientLast: fields.clientLast.trim(), clientEmail: fields.clientEmail.trim(),
+      otherFirst: fields.otherFirst.trim(), otherLast: fields.otherLast.trim(),
+      state: "NJ", county: fields.county.trim(), matterType: "Divorce", matterName: fields.matterName.trim(),
     });
     router.push(`/matters/${id}`);
   }
 
+  function field(name: FieldName, label: string, helperText?: string) {
+    return <TextField
+      id={`new-matter-${name}`} name={name} label={label} value={fields[name]}
+      required={name !== "matterName"} type={name === "clientEmail" ? "email" : "text"}
+      autoComplete={name === "clientEmail" ? "email" : "off"}
+      error={Boolean(errors[name])} helperText={errors[name] || helperText}
+      onChange={(event) => {
+        setFields((current) => ({ ...current, [name]: event.target.value }));
+        setErrors((current) => ({ ...current, [name]: undefined }));
+      }}
+      slotProps={{ inputLabel: { shrink: true } }}
+    />;
+  }
+
   return (
     <div>
-      <PageHeader
-        eyebrow="Matters"
-        title="New matter"
-        description="Create a New Jersey divorce demo matter. Other states and matter types are not supported in this pilot."
-      />
-      <form onSubmit={submit} noValidate onChange={() => setError("")} aria-describedby={error ? "new-matter-error" : undefined} className="card max-w-2xl space-y-5 p-5 md:p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Client first name">
-            <input className="field" name="clientFirst" required value={clientFirst} onChange={(event) => setClientFirst(event.target.value)} />
-          </Field>
-          <Field label="Client last name">
-            <input className="field" name="clientLast" required value={clientLast} onChange={(event) => setClientLast(event.target.value)} />
-          </Field>
-        </div>
-        <Field label="Client email" hint="Used to prepare the demo invitation. No email is sent and no real sign-in is performed.">
-          <input className="field" name="clientEmail" required type="email" value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Other party first name">
-            <input className="field" name="otherFirst" required value={otherFirst} onChange={(event) => setOtherFirst(event.target.value)} />
-          </Field>
-          <Field label="Other party last name">
-            <input className="field" name="otherLast" required value={otherLast} onChange={(event) => setOtherLast(event.target.value)} />
-          </Field>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="State" hint="Only New Jersey is supported in this pilot.">
-            <select className="field" value="NJ" disabled>
-              <option value="NJ">New Jersey</option>
-              <option value="NY" disabled>New York — not supported</option>
-              <option value="PA" disabled>Pennsylvania — not supported</option>
-            </select>
-          </Field>
-          <Field label="County">
-            <input className="field" name="county" required value={county} onChange={(event) => setCounty(event.target.value)} placeholder="Essex" />
-          </Field>
-        </div>
-        <fieldset>
-          <legend className="mb-1.5 text-sm font-medium">Matter type</legend>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {TYPES.map((type) => (
-              <button key={type} type="button" disabled aria-pressed={type === "Divorce"} className={`rounded-lg border px-3 py-2.5 text-left text-sm ${type === "Divorce" ? "border-brand bg-brand-soft font-medium text-brand" : "border-line text-muted opacity-60"}`}>
-                {type}{type !== "Divorce" ? <span className="mt-1 block text-xs">Not supported</span> : null}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-muted">The active template supports NJ Divorce only.</p>
-        </fieldset>
-        <Field label="Template">
-          <input className="field" value="NJ Divorce Financial Disclosure" readOnly />
-        </Field>
-        <Field label="Matter name (optional)" hint="Leave blank to use the parties’ names.">
-          <input className="field" value={matterName} onChange={(event) => setMatterName(event.target.value)} />
-        </Field>
-        {error ? <p id="new-matter-error" role="alert" className="text-sm text-rose-800">{error}</p> : null}
-        <div className="flex justify-end gap-2">
-          <Button type="button" onClick={() => router.push("/matters")}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="primary">
-            Create matter
-          </Button>
-        </div>
-      </form>
+      <PageHeader eyebrow="Matters" title="New matter" description="Set up a client and a New Jersey divorce matter for financial disclosure collection." />
+      <Paper component="form" variant="outlined" onSubmit={submit} noValidate sx={{ maxWidth: 760, overflow: "hidden" }}>
+        <Box component="section" aria-labelledby="new-matter-client" sx={{ p: { xs: 2, sm: 3 } }}>
+          <Typography component="h2" variant="h2" id="new-matter-client">Client</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>The client you will invite to provide financial information. Fields marked * are required.</Typography>
+          <Box sx={twoColumns}>
+            {field("clientFirst", "Client first name")}
+            {field("clientLast", "Client last name")}
+            <Box sx={{ gridColumn: "1 / -1" }}>{field("clientEmail", "Client email", "Used to prepare the demo invitation. No email is sent.")}</Box>
+          </Box>
+        </Box>
+        <Divider />
+        <Box component="section" aria-labelledby="new-matter-other" sx={{ p: { xs: 2, sm: 3 } }}>
+          <Typography component="h2" variant="h2" id="new-matter-other">Other party</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>Record the other party’s name as matter information.</Typography>
+          <Box sx={twoColumns}>
+            {field("otherFirst", "Other party first name")}
+            {field("otherLast", "Other party last name")}
+          </Box>
+        </Box>
+        <Divider />
+        <Box component="section" aria-labelledby="new-matter-details" sx={{ p: { xs: 2, sm: 3 }, display: "grid", gap: 3 }}>
+          <Typography component="h2" variant="h2" id="new-matter-details">Matter details</Typography>
+          <Box sx={twoColumns}>
+            <TextField id="new-matter-state" label="State" value="New Jersey" slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }} />
+            {field("county", "County")}
+          </Box>
+          <TextField id="new-matter-type" label="Matter type" value="Divorce" slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }} />
+          <Box sx={{ display: "grid", gap: 1.5 }}>
+            <TextField id="new-matter-template" label="Template" value="NJ Divorce Financial Disclosure" slotProps={{ input: { readOnly: true }, inputLabel: { shrink: true } }} />
+            <Alert severity="info" icon={false}>This pilot supports New Jersey divorce matters only. Other states and matter types are not available.</Alert>
+          </Box>
+          {field("matterName", "Matter name (optional)", "Leave blank to use the parties’ names.")}
+          {Object.values(errors).some(Boolean) ? <Alert severity="error">Review the highlighted fields before creating the matter.</Alert> : null}
+        </Box>
+        <Divider />
+        <Box sx={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: 1.5, px: { xs: 2, sm: 3 }, py: 2, bgcolor: "var(--surface-subtle)" }}>
+          <Button type="button" variant="outlined" onClick={() => router.push("/matters")}>Cancel</Button>
+          <Button type="submit" variant="contained">Create matter</Button>
+        </Box>
+      </Paper>
     </div>
   );
 }
