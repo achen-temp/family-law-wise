@@ -14,8 +14,8 @@ export function MatterDocuments({ matterId }: { matterId: string }) {
   const [filter, setFilter] = useState<DocumentFilter>("ALL");
   if (!matter) return <p className="text-sm text-muted">Matter not found.</p>;
 
-  const documents = state.documents
-    .filter((doc) => doc.matterId === matterId)
+  const matterDocuments = state.documents.filter((doc) => doc.matterId === matterId);
+  const documents = matterDocuments
     .filter((doc) => {
       if (filter !== "ALL" && doc.status !== filter) return false;
       return documentSearchText(doc, matter, state.requirements).includes(query.trim().toLowerCase());
@@ -31,7 +31,15 @@ export function MatterDocuments({ matterId }: { matterId: string }) {
       />
       <DocumentToolbar query={query} onQueryChange={setQuery} filter={filter} onFilterChange={setFilter} />
       <p className="mb-3 text-sm text-muted" role="status">{documents.length} files in this view</p>
-      <DocumentTable documents={documents} versionDocuments={state.documents.filter((doc) => doc.matterId === matterId)} matters={state.matters} requirements={state.requirements} hrefFor={(doc) => `/matters/${matterId}/documents/${doc.id}`} emptyMessage="No documents match this search and status." />
+      <DocumentTable
+        documents={documents}
+        versionDocuments={matterDocuments}
+        matters={state.matters}
+        requirements={state.requirements}
+        matterName={matterTitle(matter)}
+        hrefFor={(doc) => `/matters/${matterId}/documents/${doc.id}`}
+        emptyMessage="No documents match this search and status."
+      />
     </div>
   );
 }

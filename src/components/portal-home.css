@@ -1,0 +1,4 @@
+/* Home fills the desktop canvas beyond the shared shell's content cap. */
+main:has(> [data-portal-home]) {
+  max-width: none;
+}
