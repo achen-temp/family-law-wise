@@ -72,6 +72,24 @@ const theme = createTheme({
     },
     MuiTextField: { defaultProps: { size: "small", fullWidth: true } },
     MuiFormControl: { defaultProps: { size: "small" } },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: "var(--text-secondary)",
+          "&.Mui-focused": { color: "var(--text-primary)", fontWeight: 600 },
+          "&.Mui-error": { color: "var(--error-text)" },
+          "&.Mui-disabled": { color: "var(--neutral-text)" },
+        },
+        outlined: {
+          "&.MuiInputLabel-shrink": {
+            backgroundColor: "var(--surface)",
+            paddingInline: 4,
+            marginLeft: -4,
+            zIndex: 1,
+          },
+        },
+      },
+    },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {

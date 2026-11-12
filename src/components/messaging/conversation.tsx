@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Button, Chip, MenuItem, TextField } from "@mui/material";
+import { Button, Chip, MenuItem, Tab, Tabs, TextField } from "@mui/material";
 import {
   ArrowLeft,
   LockKeyhole,
@@ -110,7 +110,7 @@ export function Conversation({
           className="hidden bg-brand-soft text-brand sm:flex"
         />
       </header>
-      <div className="border-b border-line bg-slate-50 px-5 py-2 text-xs text-muted">
+      <div className="border-b border-line bg-surface-subtle px-5 py-2 text-xs text-muted">
         <Link
           className="text-brand hover:underline"
           href={
@@ -135,7 +135,7 @@ export function Conversation({
       </div>
       <div
         ref={historyRef}
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-subtle/50 p-4 sm:p-6"
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-subtle p-4 sm:p-6"
         role="log"
         aria-label="Message history"
         aria-live="polite"
@@ -156,42 +156,30 @@ export function Conversation({
             <article
               key={message.id}
               className={cn(
-                "max-w-[94%] sm:max-w-[82%]",
-                internal ? "mx-auto w-full max-w-none" : own ? "ml-auto" : "mr-auto",
+                "max-w-[92%] sm:max-w-[82%]",
+                own ? "ml-auto" : "mr-auto",
               )}
             >
               <div
                 className={cn(
-                  "rounded-xl border px-3.5 py-3",
+                  "rounded-lg border px-4 py-3",
                   internal
-                    ? "border-amber-200 bg-amber-50/70"
+                    ? "border-amber-200 bg-amber-50"
                     : own
-                      ? "border-brand/10 bg-brand-soft/70"
+                      ? "border-brand/10 bg-brand-soft"
                       : "border-line bg-white",
                 )}
               >
-                <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-foreground">
-                    {message.authorName}
+                <p className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                  {message.authorName}
                   {internal && (
                     <span className="inline-flex items-center gap-1 text-amber-800">
                       <LockKeyhole className="size-3" />
-                      Team only
+                      Internal note · team only
                     </span>
                   )}
-                  </p>
-                  <time className="shrink-0 text-[11px] text-muted" dateTime={message.createdAt}>
-                    {new Intl.DateTimeFormat("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                      timeZone: "America/New_York",
-                    }).format(new Date(message.createdAt))} ET
-                    {own && !internal && (message.readBy.includes(role === "ATTORNEY" ? "CLIENT" : "ATTORNEY") ? " · Read" : " · Sent")}
-                  </time>
-                </div>
-                <p className="whitespace-pre-wrap break-words text-sm leading-[1.55] [overflow-wrap:anywhere]">
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm leading-6 [overflow-wrap:anywhere]">
                   {message.body}
                 </p>
                 {message.documentId && (
@@ -202,36 +190,84 @@ export function Conversation({
                   />
                 )}
               </div>
+              <p
+                className={cn(
+                  "mt-1.5 text-xs text-muted",
+                  own ? "text-right" : "text-left",
+                )}
+              >
+                <time dateTime={message.createdAt}>
+                  {new Intl.DateTimeFormat("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    timeZone: "America/New_York",
+                  }).format(new Date(message.createdAt))}{" "}
+                  ET
+                </time>
+                {own &&
+                  !internal &&
+                  (message.readBy.includes(
+                    role === "ATTORNEY" ? "CLIENT" : "ATTORNEY",
+                  )
+                    ? " · Read"
+                    : " · Sent")}
+              </p>
             </article>
           );
         })}
       </div>
       <form
-        className="shrink-0 border-t border-line bg-white p-4 sm:p-5"
+        className="shrink-0 border-t border-line bg-surface p-4 sm:p-5"
         onSubmit={(event) => {
           event.preventDefault();
           send();
         }}
       >
         {role === "ATTORNEY" && (
-          <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Message visibility">
-            <button type="button" onClick={() => { setAudience("SHARED"); setFeedback(""); }} aria-pressed={audience === "SHARED"} className={cn("inline-flex h-8 items-center gap-2 rounded-md border px-3 text-xs font-medium transition-colors", audience === "SHARED" ? "border-brand bg-brand-soft text-brand" : "border-line bg-white text-muted hover:bg-surface-subtle")}>
-              <MessageSquare className="size-3.5" /> Message client
-            </button>
-            <button type="button" onClick={() => { setAudience("INTERNAL"); setFeedback(""); }} aria-pressed={audience === "INTERNAL"} className={cn("inline-flex h-8 items-center gap-2 rounded-md border px-3 text-xs font-medium transition-colors", audience === "INTERNAL" ? "border-amber-300 bg-amber-50 text-amber-900" : "border-line bg-white text-muted hover:bg-surface-subtle")}>
-              <LockKeyhole className="size-3.5" /> Internal note
-            </button>
-          </div>
+          <Tabs
+            value={audience}
+            onChange={(_, value: MessageAudience) => {
+              setAudience(value);
+              setFeedback("");
+            }}
+            aria-label="Message visibility"
+            className="mb-3 min-h-0"
+          >
+            <Tab value="SHARED" label="Message client" />
+            <Tab
+              value="INTERNAL"
+              label="Internal note"
+              icon={<LockKeyhole className="size-3.5" />}
+              iconPosition="start"
+            />
+          </Tabs>
         )}
-        {audience === "INTERNAL" && (
-          <p className="mb-3 flex items-center gap-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            <LockKeyhole className="size-3.5 shrink-0" /> Only the legal team can see this note. It will not be sent to the client.
+        {role === "ATTORNEY" && (
+          <p
+            className={cn(
+              "mb-3 flex min-h-5 items-center gap-2 text-xs leading-5",
+              audience === "INTERNAL" ? "text-amber-900" : "text-muted",
+            )}
+          >
+            {audience === "INTERNAL" ? (
+              <LockKeyhole aria-hidden="true" className="size-3.5 shrink-0" />
+            ) : (
+              <MessageSquare aria-hidden="true" className="size-3.5 shrink-0" />
+            )}
+            <span>
+              {audience === "INTERNAL"
+                ? "Only your legal team can see this note."
+                : `Visible to ${client} and your legal team.`}
+            </span>
           </p>
         )}
         <TextField
           label={
             audience === "INTERNAL" ? "Internal note" : `Message ${recipient}`
           }
+          fullWidth
           multiline
           minRows={2}
           maxRows={5}
