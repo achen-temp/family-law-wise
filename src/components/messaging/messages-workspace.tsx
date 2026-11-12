@@ -129,7 +129,7 @@ export function MessagesWorkspace({
         <LockKeyhole className="size-3.5" />
         Frontend demo · sample conversations, no external messages sent.
       </div>
-      <div className="grid overflow-hidden rounded-2xl border border-line bg-white shadow-sm lg:h-[min(780px,calc(100dvh-220px))] lg:min-h-[580px] lg:grid-cols-[minmax(260px,340px)_minmax(0,1fr)]">
+      <div className="grid overflow-hidden rounded-2xl border border-line bg-white shadow-sm lg:h-[min(780px,calc(100dvh-220px))] lg:min-h-[580px] lg:grid-cols-[300px_minmax(0,1fr)]">
         <section
           className={cn(
             "min-w-0 flex-col border-line lg:flex lg:border-r",
@@ -141,14 +141,17 @@ export function MessagesWorkspace({
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-semibold">Inbox</h2>
               <span className="text-xs text-muted">
-                {threads.length} threads
+                {threads.length} {threads.length === 1 ? "topic" : "topics"}
               </span>
             </div>
             <TextField
-              label="Search conversations"
+              placeholder="Search conversations"
+              size="small"
+              fullWidth
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               slotProps={{
+                htmlInput: { "aria-label": "Search conversations" },
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
@@ -212,13 +215,13 @@ export function MessagesWorkspace({
                       selected?.id === thread.id ? "true" : undefined
                     }
                     className={cn(
-                      "flex w-full gap-3 rounded-xl border-b border-line p-3 text-left transition-colors",
+                      "flex w-full gap-3 rounded-lg border border-transparent p-3 text-left transition-colors",
                       selected?.id === thread.id
-                        ? "bg-brand-soft"
-                        : "hover:bg-slate-50",
+                        ? "border-brand bg-brand-soft"
+                        : "hover:border-line hover:bg-surface-subtle",
                     )}
                   >
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-semibold text-brand">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-neutral-bg text-xs font-semibold text-brand">
                       {initials(name)}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -268,19 +271,35 @@ export function MessagesWorkspace({
               onBack={() => router.push(path, { scroll: false })}
             />
           ) : (
-            <div className="grid h-full place-items-center p-10 text-center">
-              <div>
-                <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand-soft text-brand">
-                  <MessageSquare className="size-7" />
-                </span>
-                <h2 className="mt-5 text-lg font-semibold">
-                  A place for every conversation
+            <div className="grid h-full place-items-center p-8 text-center">
+              <div className="max-w-sm">
+                <MessageSquare aria-hidden="true" className="mx-auto size-7 text-muted" />
+                <h2 className="mt-4 text-base font-semibold">
+                  {!threads.length
+                    ? "No conversations yet"
+                    : filtered.length === 0
+                      ? "No matching conversations"
+                      : "A place for every conversation"}
                 </h2>
-                <p className="mt-2 max-w-xs text-sm leading-6 text-muted">
-                  Choose a thread to read updates, reply, or link a document.
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {!threads.length
+                    ? "Start a topic to keep questions and updates together with this matter."
+                    : filtered.length === 0
+                      ? "Try a different search or inbox filter."
+                      : "Choose a topic to read updates, reply, or link a document."}
                 </p>
+                {!threads.length ? (
+                  <Button
+                    variant="outlined"
+                    startIcon={<Plus className="size-4" />}
+                    onClick={() => setCreating(true)}
+                    className="mt-5"
+                  >
+                    Start a conversation
+                  </Button>
+                ) : null}
                 {params.has("thread") && (
-                  <p role="status" className="mt-3 text-sm text-amber-800">
+                  <p role="status" className="mt-3 text-sm text-error-text">
                     This conversation is not available in this matter.
                   </p>
                 )}
@@ -302,14 +321,18 @@ export function MessagesWorkspace({
             create();
           }}
         >
-          <DialogTitle id="new-conversation-title">
+          <DialogTitle id="new-conversation-title" className="pb-1">
             New conversation
           </DialogTitle>
-          <DialogContent className="space-y-5 pt-3">
+          <DialogContent className="space-y-4 pt-2">
+            <p className="text-sm text-muted">
+              Give this topic a name so related updates stay together.
+            </p>
             {!matterId && (
               <TextField
                 select
                 label="Matter"
+                fullWidth
                 value={newMatter}
                 onChange={(event) => setNewMatter(event.target.value)}
                 required
@@ -325,12 +348,13 @@ export function MessagesWorkspace({
               autoFocus
               label="Topic"
               placeholder="e.g. Bank records"
+              fullWidth
               value={subject}
               onChange={(event) => setSubject(event.target.value)}
               slotProps={{ htmlInput: { maxLength: 100 } }}
               required
             />
-            <p className="text-sm text-muted">
+            <p className="text-xs text-muted">
               Shared messages will appear in both the attorney and client views.
             </p>
           </DialogContent>
