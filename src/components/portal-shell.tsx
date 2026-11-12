@@ -20,6 +20,7 @@ import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
 import { clientRequests } from "@/lib/document-selectors";
+import { DemoViewSwitcher } from "@/components/demo-view-switcher";
 import { DemoRoleSwitch } from "@/components/demo-role-switch";
 import { PageLoading } from "@/components/page-loading";
 
@@ -164,9 +165,9 @@ export function PortalShell({ token, children }: { token: string; children: Reac
               <li aria-current="page" className="shrink-0 font-medium text-foreground" title={pageLabel}>{pageLabel}</li>
             </ol>
           </nav>
-          <DemoRoleSwitch role="CLIENT" matterId={token} preserveMessages={pathname.endsWith("/messages")} />
+          {process.env.NODE_ENV === "development" ? <DemoRoleSwitch role="CLIENT" matterId={token} preserveMessages={pathname.endsWith("/messages")} /> : <DemoViewSwitcher role="Client" matter={matter} />}
         </header>
-        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating ? <PageLoading /> : children}</main>
+        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === `/portal/${token}` && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating && <PageLoading />}<div className={navigating ? "hidden" : "contents"}>{children}</div></main>
       </div>
     </div>
   );

@@ -22,6 +22,7 @@ import { cn, initials, matterTitle, stats } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import { unreadCount } from "@/lib/messaging";
 import { WiseAi } from "@/components/wise-ai/wise-ai";
+import { DemoViewSwitcher } from "@/components/demo-view-switcher";
 import { DemoRoleSwitch } from "@/components/demo-role-switch";
 import { PageLoading } from "@/components/page-loading";
 
@@ -49,7 +50,6 @@ export function FirmShell({ children }: { children: ReactNode }) {
   const matterMatch = pathname.match(/^\/matters\/([^/]+)/);
   const matterId = matterMatch && matterMatch[1] !== "new" ? matterMatch[1] : null;
   const matter = state.matters.find((item) => item.id === matterId) ?? null;
-  const demoMatterId = matter?.id ?? state.matters[0]?.id;
   const openMatters = state.matters.filter((item) => item.status !== "COMPLETE").length;
   const attention = matter
     ? state.requirements.filter(
@@ -169,9 +169,9 @@ export function FirmShell({ children }: { children: ReactNode }) {
               <li aria-current="page" className="shrink-0 font-medium text-foreground">{pageLabel}</li>
             </ol>
           </nav>
-          {demoMatterId ? <DemoRoleSwitch role="ATTORNEY" matterId={demoMatterId} preserveMessages={pathname.endsWith("/messages")} /> : null}
+          {process.env.NODE_ENV === "development" && matter ? <DemoRoleSwitch role="ATTORNEY" matterId={matter.id} preserveMessages={pathname.endsWith("/messages")} /> : <DemoViewSwitcher role="Attorney" matter={matter} />}
         </header>
-        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === "/overview" && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating ? <PageLoading /> : children}</main>
+        <main className={cn("mx-auto w-full max-w-[1696px] px-4 py-6 md:px-6 min-[90rem]:px-8 min-[120rem]:px-12", pathname === "/overview" && "[&>div.-mx-4]:m-0 [&>div.-mx-4]:min-h-0 [&>div.-mx-4]:p-0")}>{navigating && <PageLoading />}<div className={navigating ? "hidden" : "contents"}>{children}</div></main>
       </div>
     </div>
   );
