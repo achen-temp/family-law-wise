@@ -110,7 +110,7 @@ export function Conversation({
           className="hidden bg-brand-soft text-brand sm:flex"
         />
       </header>
-      <div className="border-b border-line bg-slate-50 px-5 py-2 text-xs text-muted">
+      <div className="border-b border-line bg-surface-subtle px-5 py-2 text-xs text-muted">
         <Link
           className="text-brand hover:underline"
           href={
@@ -135,7 +135,7 @@ export function Conversation({
       </div>
       <div
         ref={historyRef}
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-slate-50/50 p-4 sm:p-6"
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-surface-subtle p-4 sm:p-6"
         role="log"
         aria-label="Message history"
         aria-live="polite"
@@ -162,7 +162,7 @@ export function Conversation({
             >
               <div
                 className={cn(
-                  "rounded-2xl border p-4",
+                  "rounded-lg border px-4 py-3",
                   internal
                     ? "border-amber-200 bg-amber-50"
                     : own
@@ -170,7 +170,7 @@ export function Conversation({
                       : "border-line bg-white",
                 )}
               >
-                <p className="mb-2 flex flex-wrap items-center gap-2 text-xs font-semibold">
+                <p className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold">
                   {message.authorName}
                   {internal && (
                     <span className="inline-flex items-center gap-1 text-amber-800">
@@ -219,7 +219,7 @@ export function Conversation({
         })}
       </div>
       <form
-        className="border-t border-line p-4 sm:p-5"
+        className="shrink-0 border-t border-line bg-surface p-4 sm:p-5"
         onSubmit={(event) => {
           event.preventDefault();
           send();
@@ -244,16 +244,30 @@ export function Conversation({
             />
           </Tabs>
         )}
-        {audience === "INTERNAL" && (
-          <p className="mb-3 text-xs text-amber-800">
-            Only the legal team can see this note. It will not be sent to the
-            client.
+        {role === "ATTORNEY" && (
+          <p
+            className={cn(
+              "mb-3 flex min-h-5 items-center gap-2 text-xs leading-5",
+              audience === "INTERNAL" ? "text-amber-900" : "text-muted",
+            )}
+          >
+            {audience === "INTERNAL" ? (
+              <LockKeyhole aria-hidden="true" className="size-3.5 shrink-0" />
+            ) : (
+              <MessageSquare aria-hidden="true" className="size-3.5 shrink-0" />
+            )}
+            <span>
+              {audience === "INTERNAL"
+                ? "Only your legal team can see this note."
+                : `Visible to ${client} and your legal team.`}
+            </span>
           </p>
         )}
         <TextField
           label={
             audience === "INTERNAL" ? "Internal note" : `Message ${recipient}`
           }
+          fullWidth
           multiline
           minRows={2}
           maxRows={5}
